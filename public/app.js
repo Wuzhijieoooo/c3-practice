@@ -3,6 +3,29 @@ import { STORAGE_KEY, restoreState, startRound, recordAnswer, advanceRound } fro
 const app = document.querySelector('#app');
 const notice = document.querySelector('#notice');
 const dialog = document.querySelector('#install-dialog');
+const backdrop = document.querySelector('#install-backdrop');
+let installTrigger;
+
+function openInstall() {
+  installTrigger = document.activeElement;
+  if (typeof dialog.showModal === 'function') dialog.showModal();
+  else {
+    // Safari before 15.4 has no native dialog support.
+    dialog.classList.add('fallback-dialog');
+    dialog.setAttribute('open', '');
+    backdrop.hidden = false;
+    app.setAttribute('aria-hidden', 'true');
+    dialog.querySelector('.close').focus();
+  }
+}
+function closeInstall() {
+  if (typeof dialog.close === 'function') dialog.close();
+  else dialog.removeAttribute('open');
+  dialog.classList.remove('fallback-dialog');
+  backdrop.hidden = true;
+  app.removeAttribute('aria-hidden');
+  installTrigger?.focus();
+}
 const names = { sequential: '顺序练习', random: '随机练习', wrong: '错题重刷' };
 const types = { single: '单选题', multiple: '多选题', boolean: '判断题' };
 let questions, state, selected = [], view = 'home', offlineReady = false;
@@ -53,7 +76,7 @@ app.addEventListener('click', event => {
   if (!button) return;
   const { action, mode, key } = button.dataset;
   if (action === 'home') { selected = []; window.scrollTo(0, 0); return home(); }
-  if (action === 'install') return dialog.showModal();
+  if (action === 'install') return openInstall();
   if (action === 'resume') { selected = []; window.scrollTo(0, 0); return quiz(); }
   if (action === 'start') {
     if (state.session) { flash('已为你保留上次练习，请先完成这一组。'); selected = []; return quiz(); }
@@ -74,7 +97,18 @@ app.addEventListener('click', event => {
   if (action === 'submit') { recordAnswer(state, questions, selected); save(); return quiz(); }
   if (action === 'next') { const summary = advanceRound(state); selected = []; save(); window.scrollTo(0, 0); return summary ? result(summary) : quiz(); }
 });
-dialog.addEventListener('click', event => { if (event.target.closest('.close, .close-dialog') || event.target === dialog) dialog.close(); });
+dialog.addEventListener('click', event => { if (event.target.closest('.close, .close-dialog') || event.target === dialog) closeInstall(); });
+backdrop.addEventListener('click', closeInstall);
+dialog.addEventListener('keydown', event => {
+  if (!dialog.classList.contains('fallback-dialog')) return;
+  if (event.key === 'Escape') { event.preventDefault(); closeInstall(); }
+  if (event.key === 'Tab') {
+    const buttons = [...dialog.querySelectorAll('button')];
+    const first = buttons[0], last = buttons[buttons.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  }
+});
 
 async function prepareOffline() {
   if (!('serviceWorker' in navigator)) return;
@@ -92,17 +126,21 @@ async function prepareOffline() {
     (navigator.serviceWorker.controller || registration.active)?.postMessage({ type: 'CACHE_STATUS' }, [channel.port2]);
   } catch { flash('离线缓存暂未准备好，请保持联网后重新打开。'); }
 }
-try {
-  const response = await fetch('./questions.json');
-  if (!response.ok) throw new Error('题库加载失败');
-  const data = await response.json();
-  questions = data.questions;
-  if (!questions?.length) throw new Error('题库为空');
-  let stored = null;
-  try { stored = localStorage.getItem(STORAGE_KEY); } catch { flash('浏览器不允许保存进度，当前练习仍可进行。'); }
-  state = restoreState(stored, questions);
-  home(); prepareOffline();
-} catch {
-  app.innerHTML = '<div class="loading"><span class="brand-icon">C3</span><h2>题库还没准备好</h2><p>请联网后重试；首次使用需要下载完整题库。</p><button class="primary" id="retry">重新加载</button></div>';
-  document.querySelector('#retry').addEventListener('click', () => location.reload());
+// Safari 14 supports async functions, but cannot parse top-level await.
+async function initialize() {
+  try {
+    const response = await fetch('./questions.json');
+    if (!response.ok) throw new Error('题库加载失败');
+    const data = await response.json();
+    questions = data.questions;
+    if (!questions?.length) throw new Error('题库为空');
+    let stored = null;
+    try { stored = localStorage.getItem(STORAGE_KEY); } catch { flash('浏览器不允许保存进度，当前练习仍可进行。'); }
+    state = restoreState(stored, questions);
+    home(); prepareOffline();
+  } catch {
+    app.innerHTML = '<div class="loading"><span class="brand-icon">C3</span><h2>题库还没准备好</h2><p>请联网后重试；首次使用需要下载完整题库。</p><button class="primary" id="retry">重新加载</button></div>';
+    document.querySelector('#retry').addEventListener('click', () => location.reload());
+  }
 }
+initialize();

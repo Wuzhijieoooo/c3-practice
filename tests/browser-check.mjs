@@ -71,6 +71,23 @@ try {
   assert.equal(await page.locator('dialog').isVisible(), true);
   await page.getByRole('button', { name: '知道了' }).click();
 
+  const safari14Page = await context.newPage();
+  await safari14Page.addInitScript(() => {
+    if (window.HTMLDialogElement) {
+      delete HTMLDialogElement.prototype.showModal;
+      delete HTMLDialogElement.prototype.close;
+    }
+  });
+  await safari14Page.goto(base);
+  await safari14Page.getByRole('button', { name: '● 离线可用', exact: true }).waitFor();
+  assert.equal(await safari14Page.locator('#install-dialog').isVisible(), false);
+  await safari14Page.getByRole('button', { name: '安装与离线使用说明' }).click();
+  assert.equal(await safari14Page.locator('#install-dialog').isVisible(), true);
+  assert.equal(await safari14Page.locator('#install-backdrop').isVisible(), true);
+  await safari14Page.getByRole('button', { name: '知道了' }).click();
+  assert.equal(await safari14Page.locator('#install-dialog').isVisible(), false);
+  await safari14Page.close();
+
   await context.setOffline(true);
   await page.reload();
   await page.getByRole('button', { name: '继续上次练习' }).click();
