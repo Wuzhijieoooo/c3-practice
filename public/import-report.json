@@ -1,0 +1,1107 @@
+{
+  "source": {
+    "title": "安全员C3题库25年7月最新.pdf",
+    "pages": 106,
+    "total": 2000,
+    "counts": {
+      "single": 800,
+      "multiple": 400,
+      "boolean": 800
+    }
+  },
+  "sha256": "489922652365c172b079a1e8ae298e5a9cea69dc9b896ac531a9eca8518edcf3",
+  "answerMethod": "原 PDF 紫色选项单元格，颜色 RGB (0.886, 0.365, 0.933)",
+  "highlightedCells": 3058,
+  "allQuestionsHaveValidAnswers": true,
+  "continuousUniqueIds": true,
+  "imagePages": [],
+  "crossPageQuestions": [],
+  "warnings": [
+    {
+      "id": 1036,
+      "page": 60,
+      "kind": "multiple_with_one_highlight",
+      "message": "原 PDF 标为多选，但只高亮一个选项；按原答案保留。",
+      "answer": [
+        "B"
+      ]
+    },
+    {
+      "id": 1038,
+      "page": 60,
+      "kind": "multiple_with_one_highlight",
+      "message": "原 PDF 标为多选，但只高亮一个选项；按原答案保留。",
+      "answer": [
+        "B"
+      ]
+    },
+    {
+      "id": 1042,
+      "page": 61,
+      "kind": "multiple_with_one_highlight",
+      "message": "原 PDF 标为多选，但只高亮一个选项；按原答案保留。",
+      "answer": [
+        "B"
+      ]
+    },
+    {
+      "id": 1103,
+      "page": 65,
+      "kind": "multiple_with_one_highlight",
+      "message": "原 PDF 标为多选，但只高亮一个选项；按原答案保留。",
+      "answer": [
+        "A"
+      ]
+    },
+    {
+      "id": 1125,
+      "page": 67,
+      "kind": "multiple_with_one_highlight",
+      "message": "原 PDF 标为多选，但只高亮一个选项；按原答案保留。",
+      "answer": [
+        "B"
+      ]
+    },
+    {
+      "id": 1160,
+      "page": 69,
+      "kind": "multiple_with_one_highlight",
+      "message": "原 PDF 标为多选，但只高亮一个选项；按原答案保留。",
+      "answer": [
+        "B"
+      ]
+    }
+  ],
+  "layoutRecoveries": [
+    {
+      "id": 3,
+      "page": 1,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 44,
+      "page": 3,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 45,
+      "page": 3,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 181,
+      "page": 12,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 255,
+      "page": 16,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 261,
+      "page": 17,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 290,
+      "page": 18,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 296,
+      "page": 19,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 309,
+      "page": 19,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 314,
+      "page": 19,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 319,
+      "page": 20,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 327,
+      "page": 20,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 330,
+      "page": 20,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 362,
+      "page": 22,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 378,
+      "page": 22,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 420,
+      "page": 24,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 432,
+      "page": 25,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 434,
+      "page": 25,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 438,
+      "page": 25,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 450,
+      "page": 26,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 451,
+      "page": 26,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 457,
+      "page": 26,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 476,
+      "page": 27,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 479,
+      "page": 27,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 489,
+      "page": 27,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 508,
+      "page": 28,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 510,
+      "page": 28,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 511,
+      "page": 28,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 513,
+      "page": 28,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 521,
+      "page": 28,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 524,
+      "page": 29,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 531,
+      "page": 29,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 535,
+      "page": 29,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 536,
+      "page": 29,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 537,
+      "page": 29,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 540,
+      "page": 29,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 546,
+      "page": 29,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 550,
+      "page": 29,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 551,
+      "page": 29,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 557,
+      "page": 30,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 572,
+      "page": 30,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 592,
+      "page": 32,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 608,
+      "page": 33,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 632,
+      "page": 34,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 639,
+      "page": 34,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 640,
+      "page": 34,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 649,
+      "page": 34,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 653,
+      "page": 35,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 656,
+      "page": 35,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 658,
+      "page": 35,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 660,
+      "page": 35,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 668,
+      "page": 35,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 670,
+      "page": 35,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 676,
+      "page": 36,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 677,
+      "page": 36,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 679,
+      "page": 36,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 683,
+      "page": 36,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 691,
+      "page": 36,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 699,
+      "page": 36,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 703,
+      "page": 37,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 704,
+      "page": 37,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 706,
+      "page": 37,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 832,
+      "page": 46,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 878,
+      "page": 49,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 954,
+      "page": 55,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 957,
+      "page": 55,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 963,
+      "page": 55,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 966,
+      "page": 55,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 970,
+      "page": 56,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 971,
+      "page": 56,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 975,
+      "page": 56,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 999,
+      "page": 58,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1007,
+      "page": 58,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1008,
+      "page": 59,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1011,
+      "page": 59,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1015,
+      "page": 59,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1016,
+      "page": 59,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1025,
+      "page": 60,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1049,
+      "page": 61,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1066,
+      "page": 63,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1073,
+      "page": 63,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1085,
+      "page": 64,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1092,
+      "page": 64,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1094,
+      "page": 65,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1100,
+      "page": 65,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1102,
+      "page": 65,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1115,
+      "page": 66,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1130,
+      "page": 67,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1167,
+      "page": 69,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1171,
+      "page": 70,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1180,
+      "page": 70,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1189,
+      "page": 71,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1209,
+      "page": 72,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1265,
+      "page": 75,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1284,
+      "page": 76,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1365,
+      "page": 81,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1402,
+      "page": 83,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1434,
+      "page": 84,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1493,
+      "page": 88,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1515,
+      "page": 89,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1519,
+      "page": 89,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1536,
+      "page": 90,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1537,
+      "page": 90,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1538,
+      "page": 90,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1543,
+      "page": 90,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1569,
+      "page": 91,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1573,
+      "page": 91,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1576,
+      "page": 91,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1577,
+      "page": 91,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1580,
+      "page": 91,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1583,
+      "page": 91,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1589,
+      "page": 91,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1596,
+      "page": 92,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1599,
+      "page": 92,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1601,
+      "page": 92,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1614,
+      "page": 92,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1620,
+      "page": 93,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1625,
+      "page": 93,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1633,
+      "page": 93,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1637,
+      "page": 93,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1648,
+      "page": 94,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1651,
+      "page": 94,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1656,
+      "page": 94,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1657,
+      "page": 94,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1663,
+      "page": 94,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1666,
+      "page": 94,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1676,
+      "page": 94,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1686,
+      "page": 95,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1688,
+      "page": 95,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1733,
+      "page": 96,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1739,
+      "page": 97,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1752,
+      "page": 97,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1754,
+      "page": 97,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1755,
+      "page": 97,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1759,
+      "page": 97,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1760,
+      "page": 97,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1761,
+      "page": 97,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1766,
+      "page": 97,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1790,
+      "page": 98,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1791,
+      "page": 98,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1796,
+      "page": 99,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1806,
+      "page": 99,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1812,
+      "page": 99,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1817,
+      "page": 99,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1818,
+      "page": 99,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1819,
+      "page": 99,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1831,
+      "page": 100,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1833,
+      "page": 100,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1848,
+      "page": 100,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1856,
+      "page": 101,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1860,
+      "page": 101,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1897,
+      "page": 102,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1899,
+      "page": 102,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1903,
+      "page": 102,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1910,
+      "page": 103,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1915,
+      "page": 103,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1921,
+      "page": 103,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1924,
+      "page": 103,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1934,
+      "page": 104,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1951,
+      "page": 104,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1954,
+      "page": 104,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1958,
+      "page": 104,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1959,
+      "page": 104,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1960,
+      "page": 105,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1965,
+      "page": 105,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1968,
+      "page": 105,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1969,
+      "page": 105,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1974,
+      "page": 105,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1978,
+      "page": 105,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1981,
+      "page": 105,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    },
+    {
+      "id": 1983,
+      "page": 105,
+      "kind": "text_outside_cell",
+      "message": "按 PDF 原始字符顺序归属本题，避免邻行文字混入。"
+    }
+  ],
+  "notes": [
+    "保留题干、选项及原 PDF 答案，不生成解析或修正原题。",
+    "题库含上海地方条文，数据版本以原 PDF 为准。"
+  ]
+}

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f6f7f2">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="C3刷题">
+  <meta name="description" content="安全员 C3 题库，十题一组，利用通勤时间轻松练习。">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+  <link rel="stylesheet" href="./style.css">
+  <title>C3 通勤刷题</title>
+</head>
+<body>
+  <main id="app"><div class="loading"><span class="brand-icon">C3</span><p>正在准备你的题库…</p></div></main>
+  <div id="notice" role="status" aria-live="polite"></div>
+  <dialog id="install-dialog">
+    <button class="close" aria-label="关闭安装说明">×</button>
+    <span class="eyebrow">带上题库，随时出发</span>
+    <h2>放到 iPhone 主屏幕</h2>
+    <ol><li>在 Safari 中打开本站。</li><li>点击「分享」，选择「添加到主屏幕」。</li><li>首次打开时保持联网，直到页面显示「离线可用」。</li></ol>
+    <p class="muted">进度保存在当前浏览器或主屏幕应用中。建议添加后一直从主屏幕进入；清除网站数据会删除进度。</p>
+    <button class="primary close-dialog">知道了</button>
+  </dialog>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
