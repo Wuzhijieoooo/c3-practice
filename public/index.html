@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f6f7f2">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="C3刷题">
@@ -11,7 +12,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./icon-192.png">
-  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./style.css?v=6">
   <title>C3 通勤刷题</title>
 </head>
 <body>
@@ -27,6 +28,17 @@
     <p class="muted">进度保存在当前浏览器或主屏幕应用中。建议添加后一直从主屏幕进入；清除网站数据会删除进度。</p>
     <button class="primary close-dialog">知道了</button>
   </dialog>
-  <script type="module" src="./app.js"></script>
+  <script>
+    // Register independently of app.js so a failed module import cannot prevent updates.
+    if ('serviceWorker' in navigator) {
+      let controlled = Boolean(navigator.serviceWorker.controller);
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (controlled) location.reload();
+        controlled = true;
+      });
+      navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch(error => console.warn('离线缓存更新失败', error));
+    }
+  </script>
+  <script type="module" src="./app.js?v=6"></script>
 </body>
 </html>

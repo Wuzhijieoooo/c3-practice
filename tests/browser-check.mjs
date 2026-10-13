@@ -58,13 +58,52 @@ try {
   }
   assert.match(await page.locator('.score').innerText(), /9.*10/s);
   await shot('result');
-  await page.getByRole('button', { name: '今天先到这里' }).click();
-  await page.locator('[data-mode="wrong"]').click();
+  await page.getByRole('button', { name: '查看本组错题（1）', exact: true }).click();
+  assert.equal(await page.locator('.review-card').count(), 1);
+  assert.match(await page.locator('.review-card').innerText(), /你的选择：A\. 规范/);
+  assert.match(await page.locator('.review-card').innerText(), /题库答案：D\. 安全/);
+  await page.getByRole('button', { name: '收藏题目', exact: true }).click();
+  await shot('review');
+  await page.reload();
+  await page.getByRole('button', { name: '更多练习', exact: false }).click();
+  await page.getByRole('button', { name: '上一组错题回顾', exact: false }).click();
+  assert.match(await page.locator('.review-card').innerText(), /你的选择：A\. 规范/);
+  await page.getByRole('button', { name: '重练本组错题', exact: false }).click();
   await page.locator('[data-key="D"]').click();
   await page.getByRole('button', { name: '查看本组结果' }).click();
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('c3-practice-v1')).records[1].correct), true);
   assert.equal(await page.locator('.celebration i').count(), 12);
   await page.waitForFunction(() => !document.querySelector('.celebration'));
+  assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('c3-practice-v1')).favorites), [1]);
+  await page.getByRole('button', { name: '今天先到这里' }).click();
+  await page.getByRole('button', { name: '更多练习', exact: false }).click();
+  await shot('more');
+  await page.locator('[data-mode="favorites"]').click();
+  assert.match(await page.locator('.question-meta').innerText(), /原题 1/);
+  await page.getByRole('button', { name: '取消收藏', exact: true }).click();
+  await page.reload();
+  await page.getByRole('button', { name: '继续上次练习' }).click();
+  assert.equal(await page.getByRole('button', { name: '收藏题目', exact: true }).count(), 1);
+  await page.locator('[data-key="D"]').click();
+  await page.getByRole('button', { name: '查看本组结果', exact: false }).click();
+  await page.getByRole('button', { name: '今天先到这里' }).click();
+  await page.getByRole('button', { name: '更多练习', exact: false }).click();
+  await page.locator('[data-mode="favorites"]').click();
+  assert.equal(await page.locator('.more-view').count(), 1);
+  assert.match(await page.locator('#notice').innerText(), /还没有收藏/);
+
+  for (const type of ['single','multiple','boolean']) {
+    await setState({ cursor: 12, records: {}, session: null });
+    await page.getByRole('button', { name: '更多练习', exact: false }).click();
+    await page.locator(`[data-mode="${type}"]`).click();
+    const ids = await page.evaluate(() => JSON.parse(localStorage.getItem('c3-practice-v1')).session.ids);
+    assert.ok(ids.every(id => questions[id - 1].type === type));
+    await page.getByRole('button', { name: '收藏题目', exact: true }).click();
+    await page.reload();
+    await page.getByRole('button', { name: '继续上次练习' }).click();
+    assert.equal(await page.getByRole('button', { name: '取消收藏', exact: true }).count(), 1);
+    assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('c3-practice-v1')).cursor), 12);
+  }
 
   await setState({ cursor: 800, records: {}, session: null });
   await page.getByRole('button', { name: '开始 10 题练习' }).click();
@@ -109,6 +148,8 @@ try {
   assert.equal(await safari14Page.locator('#install-backdrop').isVisible(), true);
   await safari14Page.getByRole('button', { name: '知道了' }).click();
   assert.equal(await safari14Page.locator('#install-dialog').isVisible(), false);
+  await safari14Page.getByRole('button', { name: '更多练习', exact: false }).click();
+  assert.equal(await safari14Page.locator('.practice-row').count(), 4);
   await safari14Page.close();
 
   const reduced = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
@@ -129,6 +170,9 @@ try {
 
   await context.setOffline(true);
   await page.reload();
+  await page.getByRole('button', { name: '更多练习', exact: false }).click();
+  assert.equal(await page.locator('.practice-row').count(), 4);
+  await page.locator('[data-action="home"]').click();
   await page.getByRole('button', { name: '继续上次练习' }).click();
   assert.match(await page.locator('.feedback').innerText(), /答对了/);
   await page.getByRole('button', { name: '下一题' }).click();
@@ -159,8 +203,11 @@ try {
   assert.equal(await page.locator('.quiz-content').evaluate(element => element.scrollTop), before);
   await visibleAction();
   await page.locator('[data-action="home"]').click();
+  await page.getByRole('button', { name: '更多练习', exact: false }).click();
+  await noOverflow(); await shot('more-small');
+  await page.locator('[data-action="home"]').click();
   await page.setViewportSize({ width: 1280, height: 900 });
   await noOverflow(); await shot('desktop');
   assert.deepEqual(errors, []);
-  console.log(`${browserType}: mobile interactions, reload resume, multi-select draft, wrong review, original-answer notice, boolean questions, installation help, offline reload, narrow-screen wrapping, animations and reduced-motion PASS`);
+  console.log(`${browserType}: mobile layout, sessions, type practice, favorites, round review and retry, offline reload, Safari dialog fallback, animations and reduced-motion PASS`);
 } finally { await browser.close(); }

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { freshState, restoreState, isCorrect, startRound, recordAnswer, advanceRound } from '../public/engine.js';
+import { freshState, restoreState, isCorrect, startRound, recordAnswer, advanceRound, toggleFavorite, roundSummary } from '../public/engine.js';
 
 const { source, questions } = JSON.parse(readFileSync(new URL('../public/questions.json', import.meta.url)));
 
@@ -79,4 +79,59 @@ test('随机无重复、损坏状态可恢复、不允许跳过未答题', () =>
   state.session.ids[0] = 9000;
   assert.equal(restoreState(JSON.stringify(state), questions).session, null);
   assert.equal(state.cursor, 0);
+});
+
+test('旧版进度升级、新题型专项与收藏恢复', () => {
+  const old = { cursor: 20, records: { 1: { correct: true, attempts: 2 } }, session: { mode: 'sequential', ids: [21,22], index: 0, answers: {}, draft: [] } };
+  const upgraded = restoreState(JSON.stringify(old), questions);
+  assert.equal(upgraded.cursor, 20);
+  assert.equal(upgraded.records[1].attempts, 2);
+  assert.equal(upgraded.session.ids[0], 21);
+  assert.deepEqual(upgraded.favorites, []);
+  for (const type of ['single', 'multiple', 'boolean']) {
+    let state = freshState();
+    startRound(state, questions, type, () => .3);
+    assert.equal(state.session.ids.length, 10);
+    assert.ok(state.session.ids.every(id => questions[id - 1].type === type));
+    state = restoreState(JSON.stringify(state), questions);
+    assert.equal(state.session.mode, type);
+    recordAnswer(state, questions, questions[state.session.ids[0] - 1].answer);
+    assert.equal(state.cursor, 0);
+  }
+  let state = freshState();
+  assert.equal(startRound(state, questions, 'favorites'), null);
+  assert.equal(toggleFavorite(state, questions, 801), true);
+  assert.equal(toggleFavorite(state, questions, 1201), true);
+  state.favorites.push(801, 9000);
+  state = restoreState(JSON.stringify(state), questions);
+  assert.deepEqual(state.favorites, [801,1201]);
+  startRound(state, questions, 'favorites');
+  const id = state.session.ids[0];
+  recordAnswer(state, questions, questions[id - 1].answer);
+  assert.ok(state.favorites.includes(id));
+  assert.equal(toggleFavorite(state, questions, id), false);
+  assert.throws(() => toggleFavorite(state, questions, 9000));
+});
+
+test('本组答案快照保留、重练只取本组错题且不改变原选择', () => {
+  let state = freshState();
+  state.records[2000] = { correct: false, attempts: 1 };
+  startRound(state, questions, 'sequential');
+  for (let i=0; i<10; i++) {
+    recordAnswer(state, questions, i === 0 ? ['A'] : questions[i].answer);
+    advanceRound(state);
+  }
+  assert.deepEqual(roundSummary(state.lastRound), { mode: 'sequential', total: 10, correct: 9 });
+  state = restoreState(JSON.stringify(state), questions);
+  assert.deepEqual(state.lastRound.answers[1].selected, ['A']);
+  assert.deepEqual(startRound(state, questions, 'retry').ids, [1]);
+  recordAnswer(state, questions, ['D']);
+  assert.equal(state.records[1].correct, true);
+  assert.deepEqual(state.lastRound.answers[1].selected, ['A']);
+  advanceRound(state);
+  assert.equal(state.lastRound.mode, 'retry');
+  assert.equal(startRound(state, questions, 'retry'), null);
+  assert.equal(state.cursor, 10);
+  const broken = freshState(); broken.lastRound = { mode:'single', ids:[1], answers:{1:{selected:['X']}} };
+  assert.equal(restoreState(JSON.stringify(broken), questions).lastRound, null);
 });
