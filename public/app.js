@@ -55,7 +55,9 @@ function home() {
     <div class="mode-grid"><button class="mode-card" data-action="start" data-mode="random"><span class="mode-icon">⇄</span><strong>随机练习</strong><small>换个顺序，检验记忆</small><span class="arrow">↗</span></button><button class="mode-card" data-action="start" data-mode="wrong"><span class="mode-icon orange">↻</span><strong>错题重刷 <em>${wrongCount()}</em></strong><small>答对后移出错题本</small><span class="arrow">↗</span></button></div>
     <footer><span>${questions.length} 道原题 · 2025 年 7 月题库</span><button data-action="install">安装与离线使用说明 ↗</button></footer>`;
 }
-function quiz() {
+function quiz({ picked = null, reveal = false } = {}) {
+  const previousQuestion = app.querySelector('.quiz-content')?.dataset.question;
+  const previousProgress = app.querySelector('.quiz-view > .track i')?.style.width || '0%';
   view = 'quiz';
   app.className = 'quiz-view';
   const s = state.session;
@@ -73,11 +75,38 @@ function quiz() {
   }).join('');
   app.innerHTML = `${header(true)}<div class="quiz-heading"><span>${names[s.mode]}</span><strong>${s.index + 1}<small> / ${s.ids.length}</small></strong></div><div class="track"><i style="width:${(s.index + (answer ? 1 : 0)) / s.ids.length * 100}%"></i></div><div class="quiz-content" data-question="${q.id}"><section class="question"><div class="question-meta"><span class="tag">${types[q.type]}</span><span>原题 ${q.id} · PDF 第 ${q.pages.join('、')} 页</span></div><h1>${esc(q.text)}</h1><p class="hint">${q.type === 'multiple' ? '选择所有正确选项，再提交答案' : '点击选项，立即查看答案'}</p><div class="options">${options}</div></section></div>${answer ? `<section class="feedback ${answer.correct ? 'good' : 'bad'}" role="status"><strong>${answer.correct ? '✓ 答对了，继续保持' : '再记一次，下次就会了'}</strong><p>题库答案：<b>${esc(q.answer.join('、'))}</b>${answer.correct ? '' : `　你的选择：${esc(answer.selected.join('、'))}`}</p>${q.note ? `<p class="source-note">${esc(q.note)}</p>` : ''}<small>${answer.correct ? '已记录这次练习' : '已加入错题本，答对后自动移出'}</small></section>` : ''}<div class="quiz-actions">${answer ? `<button class="primary" data-action="next">${s.index + 1 === s.ids.length ? '查看本组结果' : '下一题'}<span>→</span></button>` : q.type === 'multiple' ? `<button class="primary" data-action="submit" ${selected.length ? '' : 'disabled'}>提交答案<span>→</span></button>` : '<p class="muted centered">点击选项即可作答</p>'}</div>`;
   app.querySelector('.quiz-content').scrollTop = scrollTop;
+  if (previousQuestion !== String(q.id)) app.querySelector('.question').classList.add('question-enter');
+  if (picked) app.querySelector(`button[data-key="${picked}"]`).classList.add('option-tap');
+  if (reveal) {
+    app.querySelector('.feedback').classList.add('feedback-enter');
+    if (!answer.correct) app.querySelector('.feedback strong').classList.add('answer-shake');
+    else app.querySelectorAll('.option.correct .option-mark').forEach(mark => mark.classList.add('check-pop'));
+  }
+  const bar = app.querySelector('.quiz-view > .track i');
+  if (bar.style.width !== previousProgress) {
+    bar.style.setProperty('--previous-progress', previousProgress);
+    bar.classList.add('progress-fill');
+  }
 }
 function result(summary) {
   view = 'result';
   app.className = 'result-view';
   app.innerHTML = `${header(true)}<section class="result"><span class="result-icon">✓</span><span class="eyebrow">${names[summary.mode]} · 本组完成</span><h1>又向前走了一小步<span class="accent">。</span></h1><div class="score">${summary.correct}<small> / ${summary.total}</small></div><p>答对 ${summary.correct} 题${summary.total === summary.correct ? '，这一组全部拿下。' : `，${summary.total - summary.correct} 道错题已收进错题本。`}</p><button class="primary" data-action="start" data-mode="${summary.mode}">再练一组<span>→</span></button><button class="secondary" data-action="home">今天先到这里</button></section>`;
+  if (summary.correct === summary.total && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const celebration = document.createElement('div');
+    celebration.className = 'celebration';
+    celebration.setAttribute('aria-hidden', 'true');
+    for (let i = 0; i < 12; i++) {
+      const piece = document.createElement('i');
+      const angle = Math.PI * 2 * i / 12;
+      piece.style.setProperty('--x', `${Math.cos(angle) * 105}px`);
+      piece.style.setProperty('--y', `${Math.sin(angle) * 80}px`);
+      piece.style.setProperty('--turn', `${i * 70}deg`);
+      celebration.appendChild(piece);
+    }
+    celebration.addEventListener('animationend', () => celebration.remove(), { once: true });
+    app.querySelector('.result-icon').appendChild(celebration);
+  }
 }
 
 app.addEventListener('click', event => {
@@ -97,13 +126,13 @@ app.addEventListener('click', event => {
     if (state.session.answers[q.id]) return;
     if (q.type === 'multiple') {
       selected = selected.includes(key) ? selected.filter(k => k !== key) : [...selected, key];
-      state.session.draft = [...selected]; save(); quiz();
+      state.session.draft = [...selected]; save(); quiz({ picked: key });
       app.querySelector(`button[data-key="${key}"]`)?.focus({ preventScroll: true });
       return;
     }
-    selected = [key]; recordAnswer(state, questions, selected); save(); return quiz();
+    selected = [key]; recordAnswer(state, questions, selected); save(); return quiz({ picked: key, reveal: true });
   }
-  if (action === 'submit') { recordAnswer(state, questions, selected); save(); return quiz(); }
+  if (action === 'submit') { recordAnswer(state, questions, selected); save(); return quiz({ reveal: true }); }
   if (action === 'next') { const summary = advanceRound(state); selected = []; save(); window.scrollTo(0, 0); return summary ? result(summary) : quiz(); }
 });
 dialog.addEventListener('click', event => { if (event.target.closest('.close, .close-dialog') || event.target === dialog) closeInstall(); });

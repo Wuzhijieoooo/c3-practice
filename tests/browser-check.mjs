@@ -43,12 +43,15 @@ try {
   await page.locator('[data-key="A"]').click();
   assert.match(await page.locator('.feedback').innerText(), /再记一次/);
   assert.match(await page.locator('.feedback').innerText(), /题库答案：D/);
+  assert.equal(await page.locator('.feedback').evaluate(element => getComputedStyle(element).animationName), 'feedback-in');
+  assert.equal(await page.locator('.feedback strong').evaluate(element => getComputedStyle(element).animationName), 'answer-shake');
   await oneScreen(); await visibleAction();
   await shot('incorrect');
   await page.reload();
   await page.getByRole('button', { name: '继续上次练习' }).click();
   assert.equal(await page.locator('.option:disabled').count(), 4);
   await page.getByRole('button', { name: '下一题' }).click();
+  assert.equal(await page.locator('.question').evaluate(element => getComputedStyle(element).animationName), 'question-in');
   for (let index = 1; index < 10; index++) {
     await page.locator(`[data-key="${questions[index].answer[0]}"]`).click();
     await page.getByRole('button', { name: index === 9 ? '查看本组结果' : '下一题' }).click();
@@ -60,6 +63,8 @@ try {
   await page.locator('[data-key="D"]').click();
   await page.getByRole('button', { name: '查看本组结果' }).click();
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('c3-practice-v1')).records[1].correct), true);
+  assert.equal(await page.locator('.celebration i').count(), 12);
+  await page.waitForFunction(() => !document.querySelector('.celebration'));
 
   await setState({ cursor: 800, records: {}, session: null });
   await page.getByRole('button', { name: '开始 10 题练习' }).click();
@@ -106,6 +111,22 @@ try {
   assert.equal(await safari14Page.locator('#install-dialog').isVisible(), false);
   await safari14Page.close();
 
+  const reduced = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const reducedPage = await reduced.newPage();
+  await reducedPage.goto(base);
+  await reducedPage.waitForSelector('.start-card');
+  await reducedPage.evaluate(() => localStorage.setItem('c3-practice-v1', JSON.stringify({ cursor: 0, records: { 1: { correct: false, attempts: 1 } }, session: null })));
+  await reducedPage.reload();
+  await reducedPage.locator('.mode-card[data-mode="wrong"]').click();
+  assert.equal(await reducedPage.locator('.question').evaluate(element => getComputedStyle(element).animationName), 'none');
+  await reducedPage.locator('[data-key="D"]').click();
+  assert.equal(await reducedPage.locator('.feedback').evaluate(element => getComputedStyle(element).animationName), 'none');
+  assert.equal(await reducedPage.locator('.track i').evaluate(element => getComputedStyle(element).transitionDuration), '0s');
+  await reducedPage.getByRole('button', { name: '查看本组结果' }).click();
+  assert.equal(await reducedPage.locator('.celebration').count(), 0);
+  assert.equal(await reducedPage.locator('.result-icon').evaluate(element => getComputedStyle(element).animationName), 'none');
+  await reduced.close();
+
   await context.setOffline(true);
   await page.reload();
   await page.getByRole('button', { name: '继续上次练习' }).click();
@@ -141,5 +162,5 @@ try {
   await page.setViewportSize({ width: 1280, height: 900 });
   await noOverflow(); await shot('desktop');
   assert.deepEqual(errors, []);
-  console.log(`${browserType}: mobile interactions, reload resume, multi-select draft, wrong review, original-answer notice, boolean questions, installation help, offline reload, narrow-screen wrapping PASS`);
+  console.log(`${browserType}: mobile interactions, reload resume, multi-select draft, wrong review, original-answer notice, boolean questions, installation help, offline reload, narrow-screen wrapping, animations and reduced-motion PASS`);
 } finally { await browser.close(); }
