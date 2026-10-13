@@ -29,6 +29,9 @@ function closeInstall() {
 const names = { sequential: '顺序练习', random: '随机练习', wrong: '错题重刷' };
 const types = { single: '单选题', multiple: '多选题', boolean: '判断题' };
 let questions, state, selected = [], view = 'home', offlineReady = false;
+function updateViewport() { document.documentElement.style.setProperty('--viewport-height', `${window.innerHeight}px`); }
+updateViewport();
+window.addEventListener('resize', updateViewport);
 const esc = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 
 function flash(message) { notice.textContent = message; notice.classList.add('show'); clearTimeout(flash.timer); flash.timer = setTimeout(() => notice.classList.remove('show'), 5000); }
@@ -42,20 +45,24 @@ function header(back = false) {
 }
 function home() {
   view = 'home';
+  app.className = 'home-view';
   const learned = Object.keys(state.records).length;
   const mastered = Object.values(state.records).filter(r => r.correct).length;
   const progress = Math.round(learned / questions.length * 100);
-  app.innerHTML = `${header()}<section class="intro"><span class="eyebrow">把通勤时间，变成一点点进步</span><h1>每天十题，<br>稳稳记住<span class="accent">。</span></h1><p>不必一次学很多。今天，也从一小组开始。</p></section>
+  app.innerHTML = `${header()}<section class="intro"><h1>今天，再练十题<span class="accent">。</span></h1><p>利用一点通勤时间，慢慢把题库变熟悉。</p></section>
     <section class="progress-card"><div class="row"><strong>你的题库足迹</strong><span>${progress}%</span></div><div class="track" role="progressbar" aria-label="题库已练进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}"><i style="width:${progress}%"></i></div><div class="stats"><div><b>${learned}<small> / ${questions.length}</small></b><span>已练题目</span></div><div><b>${mastered}</b><span>最近答对</span></div><div><b class="orange">${wrongCount()}</b><span>待复习错题</span></div></div></section>
-    <section class="start-card"><div class="row"><span class="tag">${state.session ? '上次的练习还在' : '每日一小组'}</span><span class="muted">约 5 分钟</span></div><h2>${state.session ? '接着上次，继续进步' : '下一站，再学会十题'}</h2><p>${state.session ? `${names[state.session.mode]} · 第 ${state.session.index + 1} / ${state.session.ids.length} 题` : `顺序练习 · ${state.cursor >= questions.length ? '题库已刷完，开始新一轮' : `从原题 ${questions[state.cursor].id} 开始`}`}</p><button class="primary" data-action="${state.session ? 'resume' : 'start'}" data-mode="sequential">${state.session ? '继续上次练习' : '开始 10 题练习'}<span>→</span></button></section>
+    <section class="start-card"><div class="row"><h2>${state.session ? '继续上次练习' : '顺序练习'}</h2><span class="muted">10 题 · 约 5 分钟</span></div><p>${state.session ? `${names[state.session.mode]} · 第 ${state.session.index + 1} / ${state.session.ids.length} 题` : `${state.cursor >= questions.length ? '题库已刷完，开始新一轮' : `从原题 ${questions[state.cursor].id} 开始`}`}</p><button class="primary" data-action="${state.session ? 'resume' : 'start'}" data-mode="sequential">${state.session ? '继续上次练习' : '开始 10 题练习'}<span>→</span></button></section>
     <div class="mode-grid"><button class="mode-card" data-action="start" data-mode="random"><span class="mode-icon">⇄</span><strong>随机练习</strong><small>换个顺序，检验记忆</small><span class="arrow">↗</span></button><button class="mode-card" data-action="start" data-mode="wrong"><span class="mode-icon orange">↻</span><strong>错题重刷 <em>${wrongCount()}</em></strong><small>答对后移出错题本</small><span class="arrow">↗</span></button></div>
-    <footer><span>${questions.length} 道原题 · 单选 / 多选 / 判断</span><span>题库版本：2025 年 7 月</span><button data-action="install">安装与离线使用说明 ↗</button></footer>`;
+    <footer><span>${questions.length} 道原题 · 2025 年 7 月题库</span><button data-action="install">安装与离线使用说明 ↗</button></footer>`;
 }
 function quiz() {
   view = 'quiz';
+  app.className = 'quiz-view';
   const s = state.session;
   if (!s) return home();
   const q = questions.find(q => q.id === s.ids[s.index]);
+  const previousContent = app.querySelector('.quiz-content');
+  const scrollTop = previousContent?.dataset.question === String(q.id) ? previousContent.scrollTop : 0;
   const answer = s.answers[q.id];
   selected = [...(answer ? answer.selected : s.draft)];
   const options = q.options.map(o => {
@@ -64,10 +71,12 @@ function quiz() {
     const wrong = answer && checked && !correct;
     return `<button class="option ${checked ? 'selected' : ''} ${correct ? 'correct' : ''} ${wrong ? 'incorrect' : ''}" data-action="option" data-key="${esc(o.key)}" aria-pressed="${checked}" ${answer ? 'disabled' : ''}><span class="option-key">${esc(o.key)}</span><span>${esc(o.text)}</span><span class="option-mark">${correct ? '✓' : wrong ? '×' : checked ? '✓' : ''}</span></button>`;
   }).join('');
-  app.innerHTML = `${header(true)}<div class="quiz-heading"><span>${names[s.mode]}</span><strong>${s.index + 1}<small> / ${s.ids.length}</small></strong></div><div class="track"><i style="width:${(s.index + (answer ? 1 : 0)) / s.ids.length * 100}%"></i></div><section class="question"><div class="question-meta"><span class="tag">${types[q.type]}</span><span>原题 ${q.id} · PDF 第 ${q.pages.join('、')} 页</span></div><h1>${esc(q.text)}</h1><p class="hint">${q.type === 'multiple' ? '选择所有正确选项，再提交答案' : '点击选项，立即查看答案'}</p><div class="options">${options}</div></section>${answer ? `<section class="feedback ${answer.correct ? 'good' : 'bad'}" role="status"><strong>${answer.correct ? '✓ 答对了，继续保持' : '再记一次，下次就会了'}</strong><p>题库答案：<b>${esc(q.answer.join('、'))}</b>${answer.correct ? '' : `　你的选择：${esc(answer.selected.join('、'))}`}</p>${q.note ? `<p class="source-note">${esc(q.note)}</p>` : ''}<small>${answer.correct ? '已记录这次练习' : '已加入错题本，答对后自动移出'}</small></section>` : ''}<div class="quiz-actions">${answer ? `<button class="primary" data-action="next">${s.index + 1 === s.ids.length ? '查看本组结果' : '下一题'}<span>→</span></button>` : q.type === 'multiple' ? `<button class="primary" data-action="submit" ${selected.length ? '' : 'disabled'}>提交答案<span>→</span></button>` : '<p class="muted centered">一步一步，把题库变熟悉。</p>'}</div>`;
+  app.innerHTML = `${header(true)}<div class="quiz-heading"><span>${names[s.mode]}</span><strong>${s.index + 1}<small> / ${s.ids.length}</small></strong></div><div class="track"><i style="width:${(s.index + (answer ? 1 : 0)) / s.ids.length * 100}%"></i></div><div class="quiz-content" data-question="${q.id}"><section class="question"><div class="question-meta"><span class="tag">${types[q.type]}</span><span>原题 ${q.id} · PDF 第 ${q.pages.join('、')} 页</span></div><h1>${esc(q.text)}</h1><p class="hint">${q.type === 'multiple' ? '选择所有正确选项，再提交答案' : '点击选项，立即查看答案'}</p><div class="options">${options}</div></section></div>${answer ? `<section class="feedback ${answer.correct ? 'good' : 'bad'}" role="status"><strong>${answer.correct ? '✓ 答对了，继续保持' : '再记一次，下次就会了'}</strong><p>题库答案：<b>${esc(q.answer.join('、'))}</b>${answer.correct ? '' : `　你的选择：${esc(answer.selected.join('、'))}`}</p>${q.note ? `<p class="source-note">${esc(q.note)}</p>` : ''}<small>${answer.correct ? '已记录这次练习' : '已加入错题本，答对后自动移出'}</small></section>` : ''}<div class="quiz-actions">${answer ? `<button class="primary" data-action="next">${s.index + 1 === s.ids.length ? '查看本组结果' : '下一题'}<span>→</span></button>` : q.type === 'multiple' ? `<button class="primary" data-action="submit" ${selected.length ? '' : 'disabled'}>提交答案<span>→</span></button>` : '<p class="muted centered">点击选项即可作答</p>'}</div>`;
+  app.querySelector('.quiz-content').scrollTop = scrollTop;
 }
 function result(summary) {
   view = 'result';
+  app.className = 'result-view';
   app.innerHTML = `${header(true)}<section class="result"><span class="result-icon">✓</span><span class="eyebrow">${names[summary.mode]} · 本组完成</span><h1>又向前走了一小步<span class="accent">。</span></h1><div class="score">${summary.correct}<small> / ${summary.total}</small></div><p>答对 ${summary.correct} 题${summary.total === summary.correct ? '，这一组全部拿下。' : `，${summary.total - summary.correct} 道错题已收进错题本。`}</p><button class="primary" data-action="start" data-mode="${summary.mode}">再练一组<span>→</span></button><button class="secondary" data-action="home">今天先到这里</button></section>`;
 }
 

@@ -9,6 +9,7 @@
 - 即时显示题库原答案，错题自动收集，重新答对后移出。
 - 保存答题记录、当前组、当前题和未提交多选草稿，关闭后可以继续。
 - 全部 2000 题：800 单选、400 多选、800 判断。
+- 首页采用紧凑布局，手机一屏内可见开始/继续、随机和错题入口；答题页将反馈及提交/下一题固定在底部，长题仅中间内容滚动，多选保持当前位置。
 
 没有题目解析、账号、云同步或模拟考试。进度保存在当前设备当前网站的本地存储中，切换域名、清除网站数据或重新安装可能导致进度不可用。Safari 和主屏幕应用的存储可能独立，建议安装后始终从主屏幕进入。
 
@@ -25,6 +26,23 @@ python3 -m http.server 4173 --directory public
 电脑上的 `localhost` 支持离线缓存。手机访问电脑的局域网 HTTP 地址只能预览，不能可靠安装离线应用；正式手机使用需要 HTTPS。
 
 ## iPhone 安装：静态托管即可
+
+### GitHub Pages（免自有域名）
+
+项目已提供 `.github/workflows/pages.yml`，推送 `master` 后自动发布 `public`，无需构建命令或额外依赖。
+
+1. 打开 GitHub 仓库 `Wuzhijieoooo/c3-practice`，选择 **Settings → Pages**。
+2. 在 **Build and deployment → Source** 中选择 **GitHub Actions**。不要选择 Deploy from a branch，因为实际网站在 `public` 内。
+3. 在项目目录执行 `git add .`、`git commit -m "配置 GitHub Pages 自动部署"`、`git push origin master`。
+4. 打开 **Actions → Deploy GitHub Pages**，等待工作流成功。若配置 Pages 前已推送，选择 **Run workflow → master → Run workflow** 重试。
+5. 以 **Settings → Pages** 或部署任务显示的正式地址为准；此仓库预期地址为 `https://wuzhijieoooo.github.io/c3-practice/`，包含项目名和末尾斜杠。
+6. iPhone Safari 打开正式地址，添加到主屏幕并等待“离线可用”，再断网验证。
+
+GitHub Free 的 Pages 需要公开仓库；如果 Pages 提示升级套餐，先检查仓库是否为私有。无需自定义域名、临时 token 或新增密钥。正式网站内容公开访问。
+
+应用路径使用相对地址，支持 `/c3-practice/` 子路径。换到 GitHub Pages 后，旧域名的答题进度不会自动迁移。若以后将分支改成 `main`，同步修改工作流的 `branches`。
+
+### 上传到其他静态托管平台
 
 1. 执行 `python3 scripts/package_site.py`，生成 `dist/c3-practice-site.zip`。
 2. 解压到一个新目录，把其中完整网站目录上传到支持 HTTPS 的静态托管平台。例如登录 [Netlify Drop](https://app.netlify.com/drop)，拖入解压后的目录；也可使用 Cloudflare Pages 的直接上传方式。不需要构建命令。
@@ -62,6 +80,8 @@ python3 scripts/package_site.py
 测试包含全量题库结构与答案、多选严格判分、顺序练习边界、错题移出、状态恢复与草稿保留。`tests/browser-check.mjs` 另覆盖移动视口交互和真正断网重载；运行它需要外部提供 Playwright，可设置 `PLAYWRIGHT_MODULE` 为其 `index.mjs` 绝对路径。
 
 更新网站文件时请同时递增 `public/sw.js` 中的 `CACHE` 版本；新缓存完整安装后才替换旧缓存。答题存储键无需跟随缓存版本变化。
+
+2026-10-10 布局优化验证：390×844、375×667、320×568 手机视口首页无需纵向滚动；长题答题区、结果反馈和底部按钮可正常使用，切换题目回到题干顶部，多选重绘保留滚动位置。使用 `window.innerHeight` 支持 iOS 14 的可见高度，并保留安全区域留白，浏览器模拟检查通过；真机仍需部署后验证。
 
 2026-10-10 首版验证：全量题库与逻辑测试通过；重新从 PDF 提取的题库与交付数据逐字节一致；Chrome 自动化检查通过了 390px 手机视口、320px 窄屏长题目、桌面视口、答题/续刷/多选草稿/错题重刷/题库异常提示，以及断网重载后继续答题。添加了旧版 Safari 不支持 `dialog` 和顶层 `await` 的兼容处理；浏览器检查会模拟缺少 `dialog.showModal()` / `dialog.close()` 的环境。压缩包内容与 `public` 完全一致，共 11 个文件，约 199 KiB。尚未在真实 iPhone Safari 上实测，也尚未部署公网 HTTPS 地址。
 

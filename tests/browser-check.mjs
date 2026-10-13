@@ -16,16 +16,34 @@ const snapshots = new URL(`../tmp/browser/${browserType}/`, import.meta.url);
 mkdirSync(snapshots, { recursive: true });
 const shot = name => page.screenshot({ path: fileURLToPath(new URL(`${name}.png`, snapshots)), fullPage: true });
 const noOverflow = async () => assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
+const oneScreen = async () => {
+  await page.waitForFunction(() => parseFloat(document.documentElement.style.getPropertyValue('--viewport-height')) === window.innerHeight);
+  const metrics = await page.evaluate(() => ({ scrollHeight: document.documentElement.scrollHeight, viewport: window.innerHeight }));
+  assert.ok(metrics.scrollHeight <= metrics.viewport + 1, `页面不应滚动: ${metrics.scrollHeight} > ${metrics.viewport}`);
+};
+const visibleAction = async () => {
+  const rect = await page.locator('.quiz-actions .primary').boundingBox();
+  assert.ok(rect && rect.y >= 0 && rect.y + rect.height <= page.viewportSize().height, '答题按钮必须留在屏幕内');
+};
 const setState = async state => { await page.evaluate(state => localStorage.setItem('c3-practice-v1', JSON.stringify(state)), state); await page.reload(); await page.waitForSelector('.start-card'); };
 
 try {
   await page.goto(base);
   await page.getByRole('button', { name: '● 离线可用', exact: true }).waitFor();
+  for (const viewport of [{ width: 390, height: 844 }, { width: 375, height: 667 }, { width: 320, height: 568 }]) {
+    await page.setViewportSize(viewport);
+    await oneScreen(); await noOverflow();
+    const wrong = await page.locator('.mode-card[data-mode="wrong"]').boundingBox();
+    assert.ok(wrong.y + wrong.height <= viewport.height, '首页错题入口必须无需滚动即可看到');
+    await shot(`home-${viewport.width}`);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
   await noOverflow(); await shot('home');
   await page.getByRole('button', { name: '开始 10 题练习' }).click();
   await page.locator('[data-key="A"]').click();
   assert.match(await page.locator('.feedback').innerText(), /再记一次/);
   assert.match(await page.locator('.feedback').innerText(), /题库答案：D/);
+  await oneScreen(); await visibleAction();
   await shot('incorrect');
   await page.reload();
   await page.getByRole('button', { name: '继续上次练习' }).click();
@@ -101,7 +119,24 @@ try {
   await setState({ cursor: 799, records: {}, session: null });
   await page.getByRole('button', { name: '开始 10 题练习' }).click();
   await page.setViewportSize({ width: 320, height: 568 });
+  await oneScreen();
   await noOverflow(); await shot('long-question');
+  await page.locator('.quiz-content').evaluate(element => { element.scrollTop = element.scrollHeight; });
+  await page.locator('[data-key="C"]').click();
+  await oneScreen(); await visibleAction();
+  await shot('long-question-answered');
+  await page.getByRole('button', { name: '下一题' }).click();
+  assert.equal(await page.locator('.quiz-content').evaluate(element => element.scrollTop), 0);
+  // A long multiple-choice draft must not jump back to the top on every tap.
+  const longMultiple = questions.filter(q => q.type === 'multiple').sort((a,b) => (b.text.length + b.options.map(o => o.text).join('').length) - (a.text.length + a.options.map(o => o.text).join('').length))[0];
+  await setState({ cursor: longMultiple.id - 1, records: {}, session: null });
+  await page.getByRole('button', { name: '开始 10 题练习' }).click();
+  await page.locator('.quiz-content').evaluate(element => { element.scrollTop = element.scrollHeight; });
+  const before = await page.locator('.quiz-content').evaluate(element => element.scrollTop);
+  assert.ok(before > 0);
+  await page.locator('.option').last().click();
+  assert.equal(await page.locator('.quiz-content').evaluate(element => element.scrollTop), before);
+  await visibleAction();
   await page.locator('[data-action="home"]').click();
   await page.setViewportSize({ width: 1280, height: 900 });
   await noOverflow(); await shot('desktop');
