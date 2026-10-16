@@ -102,11 +102,34 @@ try {
   for (const viewport of [{ width:320, height:568 }, { width:375, height:667 }, { width:390, height:844 }]) {
     await page.setViewportSize(viewport);
     await oneScreen(); await centeredBack(); await noOverflow();
+    const source = page.getByRole('button', {name:'题目来源', exact:true});
+    const sourceText = page.locator('#question-source-text');
+    assert.equal(await page.locator('.question-source details, .question-source summary').count(), 0, '来源不使用旧 Safari 的原生展开控件');
+    assert.equal(await source.getAttribute('aria-expanded'), 'false');
+    assert.equal(await sourceText.isVisible(), false);
+    const stored = await page.evaluate(() => localStorage.getItem('c3-practice-v1'));
+    const navigation = await page.locator('.quiz-actions').boundingBox();
+    await source.click();
+    assert.equal(await source.getAttribute('aria-expanded'), 'true');
+    assert.match(await sourceText.innerText(), /原题 1 · PDF 第 1 页/);
+    const sourceBox = await source.boundingBox(), arrowBox = await source.locator('svg').boundingBox();
+    assert.ok(sourceBox.height >= 44 && sourceBox.width < 140, '来源按钮紧凑且保留触摸高度');
+    assert.ok(arrowBox.x >= sourceBox.x && arrowBox.x + arrowBox.width <= sourceBox.x + sourceBox.width);
+    assert.ok(Math.abs(arrowBox.y + arrowBox.height / 2 - sourceBox.y - sourceBox.height / 2) < 1, '来源箭头在按钮内居中');
+    assert.equal((await page.locator('.quiz-actions').boundingBox()).y, navigation.y, '展开来源不挤动底部操作');
+    await source.press('Enter');
+    assert.equal(await source.getAttribute('aria-expanded'), 'false');
+    assert.equal(await sourceText.isVisible(), false);
+    assert.equal(await page.evaluate(() => localStorage.getItem('c3-practice-v1')), stored, '展开来源不改变进度');
+    await oneScreen(); await noOverflow();
     if (viewport.width === 320) await shot('back-small');
   }
   await page.locator('header .back svg').click();
   await page.getByRole('button', { name: '继续答题', exact: false }).click();
+  await page.getByRole('button', {name:'题目来源', exact:true}).click();
   await page.locator('[data-key="A"]').click();
+  assert.equal(await page.getByRole('button', {name:'题目来源', exact:true}).getAttribute('aria-expanded'), 'true', '答题重绘保留来源展开状态');
+  assert.equal(await page.locator('#question-source-text').isVisible(), true);
   assert.match(await page.locator('.feedback').innerText(), /再记一次/);
   assert.match(await page.locator('.feedback').innerText(), /题库答案：D/);
   assert.equal(await page.locator('.feedback').evaluate(element => getComputedStyle(element).animationName), 'feedback-in');
@@ -117,6 +140,7 @@ try {
   await page.getByRole('button', { name: '继续答题' }).click();
   assert.equal(await page.locator('.option:disabled').count(), 4);
   await page.getByRole('button', { name: '下一题' }).click();
+  assert.equal(await page.getByRole('button', {name:'题目来源', exact:true}).getAttribute('aria-expanded'), 'false', '切题后默认收起来源');
   assert.equal(await page.locator('.question').evaluate(element => getComputedStyle(element).animationName), 'question-in');
   const beforeReview = await page.evaluate(() => localStorage.getItem('c3-practice-v1'));
   await page.getByRole('button', { name: '上一题', exact: true }).click();

@@ -1,4 +1,4 @@
-import { STORAGE_KEY, restoreState, startRound, recordAnswer, advanceRound, toggleFavorite, roundSummary, EXAM_RULES, startExam, examSeconds, setExamAnswer, goExamQuestion, examSummary, finishExam } from './engine.js?v=11';
+import { STORAGE_KEY, restoreState, startRound, recordAnswer, advanceRound, toggleFavorite, roundSummary, EXAM_RULES, startExam, examSeconds, setExamAnswer, goExamQuestion, examSummary, finishExam } from './engine.js?v=12';
 
 const app = document.querySelector('#app');
 const notice = document.querySelector('#notice');
@@ -102,7 +102,9 @@ function quiz({ picked = null, reveal = false } = {}) {
   const index = reviewIndex ?? s.index;
   const q = questions.find(q => q.id === s.ids[index]);
   const previousContent = app.querySelector('.quiz-content');
-  const scrollTop = previousContent?.dataset.question === String(q.id) ? previousContent.scrollTop : 0;
+  const sameQuestion = previousContent?.dataset.question === String(q.id);
+  const scrollTop = sameQuestion ? previousContent.scrollTop : 0;
+  const sourceOpen = Boolean(sameQuestion && previousContent.querySelector('.source-toggle')?.getAttribute('aria-expanded') === 'true');
   const answer = s.answers[q.id];
   selected = [...(answer ? answer.selected : s.draft)];
   const options = q.options.map(o => {
@@ -114,7 +116,7 @@ function quiz({ picked = null, reveal = false } = {}) {
   const choice = keys => keys.map(key => `${key}. ${q.options.find(o => o.key === key).text}`).join('；');
   const missing = answer ? q.answer.filter(key => !answer.selected.includes(key)) : [];
   const extra = answer ? answer.selected.filter(key => !q.answer.includes(key)) : [];
-  app.innerHTML = `<header class="quiz-toolbar">${backButton()}<div class="quiz-heading"><span>${names[s.mode]}</span><strong>${index + 1}<small> / ${s.ids.length}</small></strong></div><button class="switch-practice" data-action="more" aria-label="切换练习">⇄ 切换</button></header><div class="track"><i style="width:${Object.keys(s.answers).length / s.ids.length * 100}%"></i></div><div class="quiz-content" data-question="${q.id}"><section class="question"><div class="question-meta"><span class="tag">${types[q.type]}</span><span>原题 ${q.id}</span>${favoriteButton(q.id)}</div><h1>${esc(q.text)}</h1><p class="hint">${reviewIndex !== null ? '回看已答题目 · 原选择与得分保持不变' : q.type === 'multiple' ? '选择所有正确选项，再提交答案' : '点击选项，立即查看答案'}</p><div class="options">${options}</div><details class="question-source"><summary>题目来源</summary><p>原题 ${q.id} · PDF 第 ${q.pages.join('、')} 页</p></details></section></div>${answer ? `<section class="feedback ${answer.correct ? 'good' : 'bad'}" role="status" tabindex="0" aria-label="答题反馈"><strong>${answer.correct ? '✓ 答对了，继续保持' : '再记一次，下次就会了'}</strong><p>题库答案：<b>${esc(choice(q.answer))}</b></p>${answer.correct ? '' : `<p>你的选择：${esc(choice(answer.selected))}</p>`}${q.type === 'multiple' && !answer.correct ? `<p class="answer-diff">${extra.length ? `错选：${esc(extra.join('、'))}` : ''}${extra.length && missing.length ? '　' : ''}${missing.length ? `漏选：${esc(missing.join('、'))}` : ''}</p>` : ''}${q.note ? `<p class="source-note">${esc(q.note)}</p>` : ''}</section>` : ''}<div class="quiz-actions practice-navigation"><button class="secondary" data-action="previous" ${index > 0 ? '' : 'disabled'}>上一题</button>${answer ? `<button class="primary" data-action="next">${reviewIndex === null && s.index + 1 === s.ids.length ? '查看本组结果' : '下一题'}<span>→</span></button>` : q.type === 'multiple' ? `<button class="primary" data-action="submit" ${selected.length ? '' : 'disabled'}>提交答案<span>→</span></button>` : '<button class="primary" data-action="next" disabled>下一题<span>→</span></button>'}</div>`;
+  app.innerHTML = `<header class="quiz-toolbar">${backButton()}<div class="quiz-heading"><span>${names[s.mode]}</span><strong>${index + 1}<small> / ${s.ids.length}</small></strong></div><button class="switch-practice" data-action="more" aria-label="切换练习">⇄ 切换</button></header><div class="track"><i style="width:${Object.keys(s.answers).length / s.ids.length * 100}%"></i></div><div class="quiz-content" data-question="${q.id}"><section class="question"><div class="question-meta"><span class="tag">${types[q.type]}</span><span>原题 ${q.id}</span>${favoriteButton(q.id)}</div><h1>${esc(q.text)}</h1><p class="hint">${reviewIndex !== null ? '回看已答题目 · 原选择与得分保持不变' : q.type === 'multiple' ? '选择所有正确选项，再提交答案' : '点击选项，立即查看答案'}</p><div class="options">${options}</div><div class="question-source"><button class="source-toggle" data-action="source" aria-expanded="${sourceOpen}" aria-controls="question-source-text">题目来源<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 3 5 5-5 5"/></svg></button><p id="question-source-text" ${sourceOpen ? '' : 'hidden'}>原题 ${q.id} · PDF 第 ${q.pages.join('、')} 页</p></div></section></div>${answer ? `<section class="feedback ${answer.correct ? 'good' : 'bad'}" role="status" tabindex="0" aria-label="答题反馈"><strong>${answer.correct ? '✓ 答对了，继续保持' : '再记一次，下次就会了'}</strong><p>题库答案：<b>${esc(choice(q.answer))}</b></p>${answer.correct ? '' : `<p>你的选择：${esc(choice(answer.selected))}</p>`}${q.type === 'multiple' && !answer.correct ? `<p class="answer-diff">${extra.length ? `错选：${esc(extra.join('、'))}` : ''}${extra.length && missing.length ? '　' : ''}${missing.length ? `漏选：${esc(missing.join('、'))}` : ''}</p>` : ''}${q.note ? `<p class="source-note">${esc(q.note)}</p>` : ''}</section>` : ''}<div class="quiz-actions practice-navigation"><button class="secondary" data-action="previous" ${index > 0 ? '' : 'disabled'}>上一题</button>${answer ? `<button class="primary" data-action="next">${reviewIndex === null && s.index + 1 === s.ids.length ? '查看本组结果' : '下一题'}<span>→</span></button>` : q.type === 'multiple' ? `<button class="primary" data-action="submit" ${selected.length ? '' : 'disabled'}>提交答案<span>→</span></button>` : '<button class="primary" data-action="next" disabled>下一题<span>→</span></button>'}</div>`;
   app.querySelector('.quiz-content').scrollTop = scrollTop;
   if (previousQuestion !== String(q.id)) app.querySelector('.question').classList.add('question-enter');
   if (picked) app.querySelector(`button[data-key="${picked}"]`).classList.add('option-tap');
@@ -265,6 +267,12 @@ app.addEventListener('click', event => {
     button.setAttribute('aria-label', favorite ? '取消收藏' : '收藏题目');
     button.textContent = favorite ? '★ 已收藏' : '☆ 收藏';
     save(); return;
+  }
+  if (action === 'source') {
+    const open = button.getAttribute('aria-expanded') !== 'true';
+    button.setAttribute('aria-expanded', String(open));
+    document.getElementById(button.getAttribute('aria-controls')).hidden = !open;
+    return;
   }
   if (action === 'install') return openInstall();
   if (action === 'start') {

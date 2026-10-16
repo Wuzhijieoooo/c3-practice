@@ -1,5 +1,5 @@
-const CACHE = 'c3-practice-v11';
-const ASSETS = ['./', './index.html', './style.css?v=11', './app.js?v=11', './engine.js?v=11', './questions.json', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
+const CACHE = 'c3-practice-v12';
+const ASSETS = ['./', './index.html', './style.css?v=12', './app.js?v=12', './engine.js?v=12', './questions.json', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS.map(url => new Request(url, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
