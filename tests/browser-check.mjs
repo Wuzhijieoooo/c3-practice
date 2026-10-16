@@ -102,34 +102,17 @@ try {
   for (const viewport of [{ width:320, height:568 }, { width:375, height:667 }, { width:390, height:844 }]) {
     await page.setViewportSize(viewport);
     await oneScreen(); await centeredBack(); await noOverflow();
-    const source = page.getByRole('button', {name:'题目来源', exact:true});
-    const sourceText = page.locator('#question-source-text');
-    assert.equal(await page.locator('.question-source details, .question-source summary').count(), 0, '来源不使用旧 Safari 的原生展开控件');
-    assert.equal(await source.getAttribute('aria-expanded'), 'false');
-    assert.equal(await sourceText.isVisible(), false);
-    const stored = await page.evaluate(() => localStorage.getItem('c3-practice-v1'));
-    const navigation = await page.locator('.quiz-actions').boundingBox();
-    await source.click();
-    assert.equal(await source.getAttribute('aria-expanded'), 'true');
-    assert.match(await sourceText.innerText(), /原题 1 · PDF 第 1 页/);
-    const sourceBox = await source.boundingBox(), arrowBox = await source.locator('svg').boundingBox();
-    assert.ok(sourceBox.height >= 44 && sourceBox.width < 140, '来源按钮紧凑且保留触摸高度');
-    assert.ok(arrowBox.x >= sourceBox.x && arrowBox.x + arrowBox.width <= sourceBox.x + sourceBox.width);
-    assert.ok(Math.abs(arrowBox.y + arrowBox.height / 2 - sourceBox.y - sourceBox.height / 2) < 1, '来源箭头在按钮内居中');
-    assert.equal((await page.locator('.quiz-actions').boundingBox()).y, navigation.y, '展开来源不挤动底部操作');
-    await source.press('Enter');
-    assert.equal(await source.getAttribute('aria-expanded'), 'false');
-    assert.equal(await sourceText.isVisible(), false);
-    assert.equal(await page.evaluate(() => localStorage.getItem('c3-practice-v1')), stored, '展开来源不改变进度');
-    await oneScreen(); await noOverflow();
+    assert.equal(await page.locator('.question-source, .source-toggle').count(), 0, '来源不再占用题目底部空间');
+    const origin = page.locator('.question-origin');
+    assert.match(await origin.innerText(), /原题 1 · PDF 1 页/);
+    const originBox = await origin.boundingBox(), metaBox = await page.locator('.question-meta').boundingBox();
+    assert.ok(originBox.y >= metaBox.y && originBox.y + originBox.height <= metaBox.y + metaBox.height, '来源位于题型与收藏之间的元信息行');
     if (viewport.width === 320) await shot('back-small');
   }
   await page.locator('header .back svg').click();
   await page.getByRole('button', { name: '继续答题', exact: false }).click();
-  await page.getByRole('button', {name:'题目来源', exact:true}).click();
   await page.locator('[data-key="A"]').click();
-  assert.equal(await page.getByRole('button', {name:'题目来源', exact:true}).getAttribute('aria-expanded'), 'true', '答题重绘保留来源展开状态');
-  assert.equal(await page.locator('#question-source-text').isVisible(), true);
+  assert.equal(await page.locator('.question .hint').count(), 0, '答题后移除操作提示，为题目腾出空间');
   assert.match(await page.locator('.feedback').innerText(), /再记一次/);
   assert.match(await page.locator('.feedback').innerText(), /题库答案：D/);
   assert.equal(await page.locator('.feedback').evaluate(element => getComputedStyle(element).animationName), 'feedback-in');
@@ -140,7 +123,6 @@ try {
   await page.getByRole('button', { name: '继续答题' }).click();
   assert.equal(await page.locator('.option:disabled').count(), 4);
   await page.getByRole('button', { name: '下一题' }).click();
-  assert.equal(await page.getByRole('button', {name:'题目来源', exact:true}).getAttribute('aria-expanded'), 'false', '切题后默认收起来源');
   assert.equal(await page.locator('.question').evaluate(element => getComputedStyle(element).animationName), 'question-in');
   const beforeReview = await page.evaluate(() => localStorage.getItem('c3-practice-v1'));
   await page.getByRole('button', { name: '上一题', exact: true }).click();
@@ -494,6 +476,23 @@ try {
   await page.waitForSelector('.exam-result-view', { timeout: 6000 });
   assert.match(await page.locator('.exam-result-view .eyebrow').innerText(), /超时自动交卷/);
   assert.match(await page.locator('.score').innerText(), /0.*100/s);
+  await page.locator('header [data-action="home"]').click();
+  // The reported question fits after grading even with a Safari-sized content viewport.
+  for (const viewport of [{width:375,height:600}, {width:390,height:650}, {width:414,height:700}]) {
+    await page.setViewportSize(viewport);
+    await setState({cursor:8, records:{}, session:null});
+    await page.getByRole('button', {name:'开始 10 题练习'}).click();
+    await page.locator('[data-key="A"]').click();
+    await oneScreen(); await visibleAction(); await noOverflow();
+    const area = await page.locator('.quiz-content').evaluate(el => ({height:el.clientHeight, full:el.scrollHeight, top:el.scrollTop}));
+    assert.ok(area.full <= area.height + 1, `第 9 题答后无需滚动: ${JSON.stringify({viewport, ...area})}`);
+    assert.equal(area.top, 0);
+    assert.equal(await page.locator('.question .hint, .question-source').count(), 0);
+    const options = await page.locator('.options').boundingBox(), content = await page.locator('.quiz-content').boundingBox();
+    assert.ok(options.y >= content.y && options.y + options.height <= content.y + content.height + 1, '答后四个选项完整可见');
+    assert.match(await page.locator('.question-origin').innerText(), /原题 9 · PDF 1 页/);
+    if (viewport.width === 390) await shot('source-inline-answered');
+  }
   await page.locator('header [data-action="home"]').click();
   // Font preference survives reload; read-only review does not replace a multiple-choice draft.
   await page.setViewportSize({width:390,height:844});
