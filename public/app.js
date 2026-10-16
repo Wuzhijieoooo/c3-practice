@@ -1,4 +1,4 @@
-import { STORAGE_KEY, restoreState, startRound, recordAnswer, advanceRound, toggleFavorite, roundSummary } from './engine.js?v=7';
+import { STORAGE_KEY, restoreState, startRound, recordAnswer, advanceRound, toggleFavorite, roundSummary, EXAM_RULES, startExam, examSeconds, setExamAnswer, goExamQuestion, examSummary, finishExam } from './engine.js?v=8';
 
 const app = document.querySelector('#app');
 const notice = document.querySelector('#notice');
@@ -58,7 +58,7 @@ function more() {
   const details = { sequential: state.cursor >= questions.length ? '题库已刷完，可开始新一轮' : `从原题 ${questions[state.cursor].id} 开始`, random: '全部原题 · 随机出题', wrong: `${wrongCount()} 道错题 · 答对后移出`, favorites: `${state.favorites.length} 道收藏 · 答对后仍保留`, retry: '继续上次未完成的错题重练' };
   const modes = ['sequential', 'random', 'wrong', 'single', 'multiple', 'boolean', 'favorites'];
   if (pending('retry')) modes.push('retry');
-  app.innerHTML = `${header(back)}<section class="page-intro"><h1>切换练习</h1><p>每种模式单独保存，切回来接着答。</p></section><div class="practice-list">${modes.map(mode => `<button class="practice-row ${state.session?.mode === mode ? 'current-practice' : ''}" data-action="start" data-mode="${mode}" ${state.session?.mode === mode ? 'aria-current="true"' : ''}><span><strong>${names[mode]}</strong><small>${practiceDetail(mode, details[mode] || `${questions.filter(q => q.type === mode).length} 道原题 · 随机出题`)}</small></span><span class="arrow-symbol">${pending(mode) ? '继续' : '→'}</span></button>`).join('')}${state.lastRound ? '<button class="practice-row" data-action="review"><span><strong>上一组错题回顾</strong><small>查看你的选择和题库原答案</small></span><span class="arrow-symbol">→</span></button>' : ''}</div><p class="hint">已答题目和多选草稿都会保留，未完成的一组不会重新抽题。</p>`;
+  app.innerHTML = `${header(back)}<section class="page-intro"><h1>切换练习</h1><p>每种模式单独保存，切回来接着答。</p></section><div class="practice-list"><button class="practice-row" data-action="exam-setup"><span><strong>模拟考试</strong><small>${state.exam ? `已答 ${Object.keys(state.exam.answers).length} / ${EXAM_RULES.total} 题 · 继续考试` : `${EXAM_RULES.total} 题 · ${EXAM_RULES.minutes} 分钟 · 交卷后评分`}</small></span><span class="arrow-symbol">→</span></button>${modes.map(mode => `<button class="practice-row ${state.session?.mode === mode ? 'current-practice' : ''}" data-action="start" data-mode="${mode}" ${state.session?.mode === mode ? 'aria-current="true"' : ''}><span><strong>${names[mode]}</strong><small>${practiceDetail(mode, details[mode] || `${questions.filter(q => q.type === mode).length} 道原题 · 随机出题`)}</small></span><span class="arrow-symbol">${pending(mode) ? '继续' : '→'}</span></button>`).join('')}${state.lastRound ? '<button class="practice-row" data-action="review"><span><strong>上一组错题回顾</strong><small>查看你的选择和题库原答案</small></span><span class="arrow-symbol">→</span></button>' : ''}</div><p class="hint">已答题目和多选草稿都会保留，未完成的一组不会重新抽题。</p>`;
   window.scrollTo(0, 0);
 }
 function review() {
@@ -84,7 +84,7 @@ function home() {
     <section class="progress-card"><div class="row"><strong>你的题库足迹</strong><span>${progress}%</span></div><div class="track" role="progressbar" aria-label="题库已练进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}"><i style="width:${progress}%"></i></div><div class="stats"><div><b>${learned}<small> / ${questions.length}</small></b><span>已练题目</span></div><div><b>${mastered}</b><span>最近答对</span></div><div><b class="orange">${wrongCount()}</b><span>待复习错题</span></div></div></section>
     <section class="start-card"><div class="row"><h2>${resume ? '继续上次练习' : '顺序练习'}</h2><span class="muted">10 题 · 约 5 分钟</span></div><p>${resume ? `${names[resume.mode]} · 第 ${resume.index + 1} / ${resume.ids.length} 题` : `${state.cursor >= questions.length ? '题库已刷完，开始新一轮' : `从原题 ${questions[state.cursor].id} 开始`}`}</p><button class="primary" data-action="start" data-mode="${resume?.mode || 'sequential'}">${resume ? '继续上次练习' : '开始 10 题练习'}<span>→</span></button></section>
     <div class="mode-grid"><button class="mode-card" data-action="start" data-mode="random"><span class="mode-icon">⇄</span><strong>随机练习</strong><small>${practiceDetail('random', '换个顺序，检验记忆')}</small><span class="arrow">↗</span></button><button class="mode-card" data-action="start" data-mode="wrong"><span class="mode-icon orange">↻</span><strong>错题重刷 <em>${wrongCount()}</em></strong><small>${practiceDetail('wrong', '答对后移出错题本')}</small><span class="arrow">↗</span></button></div>
-    <footer><span>${questions.length} 道原题 · 2025 年 7 月题库</span><div class="footer-actions"><button class="more-link" data-action="more">更多练习 ↗</button><button data-action="install">安装与离线使用说明 ↗</button></div></footer>`;
+    <footer><span>${questions.length} 道原题 · 2025 年 7 月题库</span><div class="footer-actions"><button class="more-link" data-action="more">更多练习 ↗</button><button class="more-link" data-action="exam-setup">模拟考试</button><button data-action="install">安装与离线使用说明 ↗</button></div></footer>`;
 }
 function quiz({ picked = null, reveal = false } = {}) {
   const previousQuestion = app.querySelector('.quiz-content')?.dataset.question;
@@ -146,10 +146,97 @@ function result(summary, celebrate = true) {
   }
 }
 
+function examClock() { return '<span class="exam-clock" aria-label="考试剩余时间"></span>'; }
+function examSetup() {
+  view = 'exam-setup'; app.className = 'more-view';
+  app.innerHTML = `${header(true)}<section class="page-intro"><h1>模拟考试</h1><p>应用自测规则 · 整卷作答，交卷后统一评分。</p></section><section class="exam-panel"><div class="exam-rules"><strong>${EXAM_RULES.total} 题 · ${EXAM_RULES.minutes} 分钟</strong><p>单选 ${EXAM_RULES.counts.single} 题 · 多选 ${EXAM_RULES.counts.multiple} 题 · 判断 ${EXAM_RULES.counts.boolean} 题</p><p>每题 1 分，满分 ${EXAM_RULES.total} 分，${EXAM_RULES.passScore} 分达标。</p><p>多选须全部选对才得分，未答题计 0 分。</p><p>考试中可改答案、用答题卡跳题；交卷后，错题和未答题加入错题本。</p><p>切换练习或关闭页面，倒计时继续。时间到自动交卷，重新打开时结算。</p></div>${state.exam ? `<p class="exam-resume">已答 ${Object.keys(state.exam.answers).length} / ${EXAM_RULES.total} 题 · 剩余 ${examClock()}</p>` : ''}<button class="primary" data-action="exam-start">${state.exam ? '继续考试' : '开始模拟考试'}<span>→</span></button>${state.lastExam ? '<button class="secondary" data-action="exam-result">查看上次考试结果</button>' : ''}</section>`;
+  updateExamClock(); window.scrollTo(0, 0);
+}
+function updateExamClock() {
+  if (!state.exam) return;
+  const seconds = examSeconds(state.exam);
+  const text = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+  app.querySelectorAll('.exam-clock').forEach(el => { el.textContent = text; el.classList.toggle('time-low', seconds <= 300); });
+}
+function checkExamTime(now = Date.now()) {
+  if (!state?.exam) return false;
+  if (examSeconds(state.exam, now) > 0) { updateExamClock(); return false; }
+  finishExam(state, questions, now); save();
+  if (view.startsWith('exam')) examResult();
+  else { if (view === 'home') home(); flash('模拟考试时间到，已自动交卷。可在「模拟考试」查看成绩。'); }
+  return true;
+}
+function examPage() {
+  if (!state.exam) return examSetup();
+  const exam = state.exam;
+  const q = questions.find(q => q.id === exam.ids[exam.index]);
+  const previous = app.querySelector('.quiz-content');
+  const scrollTop = previous?.dataset.question === `exam-${q.id}` ? previous.scrollTop : 0;
+  const chosen = exam.answers[q.id] || [];
+  view = 'exam'; app.className = 'quiz-view exam-view';
+  app.innerHTML = `${header(true)}<div class="quiz-heading"><span>模拟考试 · ${examClock()}</span><strong>${exam.index + 1}<small> / ${EXAM_RULES.total}</small></strong></div><div class="exam-toolbar"><span>已答 ${Object.keys(exam.answers).length} 题</span><button data-action="exam-card">答题卡</button><button data-action="exam-confirm">交卷</button></div><div class="quiz-content" data-question="exam-${q.id}"><section class="question"><div class="question-meta"><span class="tag">${types[q.type]}</span><span>原题 ${q.id}</span>${favoriteButton(q.id)}</div><h1>${esc(q.text)}</h1><p class="hint">${q.type === 'multiple' ? '选择所有正确选项' : '选择一个选项'} · 可修改，交卷后查看答案</p><div class="options">${q.options.map(o => `<button class="option ${chosen.includes(o.key) ? 'selected' : ''}" data-action="exam-option" data-key="${esc(o.key)}" aria-pressed="${chosen.includes(o.key)}"><span class="option-key">${esc(o.key)}</span><span>${esc(o.text)}</span><span class="option-mark">${chosen.includes(o.key) ? '✓' : ''}</span></button>`).join('')}</div></section></div><div class="quiz-actions exam-navigation"><button class="secondary" data-action="exam-prev" ${exam.index === 0 ? 'disabled' : ''}>上一题</button><button class="primary" data-action="${exam.index === exam.ids.length - 1 ? 'exam-confirm' : 'exam-next'}">${exam.index === exam.ids.length - 1 ? '检查并交卷' : '下一题'}<span>→</span></button></div>`;
+  app.querySelector('.quiz-content').scrollTop = scrollTop;
+  updateExamClock();
+}
+function examCard() {
+  const exam = state.exam;
+  if (!exam) return examSetup();
+  view = 'exam-card'; app.className = 'more-view exam-card-view';
+  app.innerHTML = `${header(true)}<section class="page-intro"><h1>答题卡</h1><p>已答 ${Object.keys(exam.answers).length} / ${EXAM_RULES.total} 题 · ${examClock()}</p><p>绿色已答，白色未答；点击题号跳转。</p></section><div class="exam-card-grid">${exam.ids.map((id, index) => `<button data-action="exam-jump" data-index="${index}" class="${exam.answers[id] ? 'is-answered' : ''} ${index === exam.index ? 'is-current' : ''}" aria-label="第 ${index + 1} 题，${exam.answers[id] ? '已答' : '未答'}">${index + 1}</button>`).join('')}</div><div class="exam-card-actions"><button class="primary" data-action="exam-confirm">检查并交卷</button><button class="secondary" data-action="exam-resume">返回当前题</button></div>`;
+  updateExamClock();
+}
+function examConfirm() {
+  if (!state.exam) return examSetup();
+  const answered = Object.keys(state.exam.answers).length;
+  view = 'exam-confirm'; app.className = 'more-view';
+  app.innerHTML = `${header(true)}<section class="page-intro"><h1>准备交卷</h1><p>剩余 ${examClock()}</p></section><section class="exam-panel"><div class="exam-rules"><strong>已答 ${answered} / ${EXAM_RULES.total} 题</strong><p>${answered === EXAM_RULES.total ? '已完成全部题目，交卷后查看成绩与错题。' : `还有 ${EXAM_RULES.total - answered} 题未答，交卷后计 0 分。`}</p><p>交卷后不能修改本次答案。</p></div><button class="primary" data-action="exam-submit">确认交卷</button><button class="secondary" data-action="exam-card">返回答题卡检查</button><button class="secondary" data-action="exam-resume">继续答题</button></section>`;
+  updateExamClock();
+}
+function examResult() {
+  if (!state.lastExam) return examSetup();
+  view = 'exam-result'; app.className = 'result-view exam-result-view';
+  const exam = state.lastExam;
+  const summary = examSummary(exam, questions);
+  app.innerHTML = `${header(true)}<section class="result"><span class="result-icon">${summary.passed ? '✓' : '↻'}</span><span class="eyebrow">模拟考试 · ${exam.submittedAt >= exam.deadline ? '超时自动交卷' : '已交卷'}</span><h1>${summary.passed ? '达到自测目标' : '再练一练，继续进步'}</h1><div class="score">${summary.score}<small> / ${EXAM_RULES.total}</small></div><p>答对 ${summary.correct} 题 · 答错 ${summary.answered - summary.correct} 题 · 未答 ${summary.unanswered} 题<br>${EXAM_RULES.passScore} 分达标 · 错题和未答题已收进错题本</p><button class="primary" data-action="exam-review">查看考试错题（${summary.wrongIds.length}）<span>→</span></button><button class="secondary" data-action="exam-setup">${state.exam ? '继续正在进行的考试' : '再考一场'}</button><button class="secondary" data-action="home">返回首页</button></section>`;
+  window.scrollTo(0, 0);
+}
+function examReview() {
+  if (!state.lastExam) return examSetup();
+  const exam = state.lastExam;
+  const summary = examSummary(exam, questions);
+  const choice = (q, keys) => keys?.length ? keys.map(key => `${key}. ${q.options.find(o => o.key === key).text}`).join('；') : '未作答';
+  view = 'exam-review'; app.className = 'review-view';
+  app.innerHTML = `${header(true)}<section class="page-intro"><h1>考试错题回顾</h1><p>答错与未答共 ${summary.wrongIds.length} 题 · 题库原答案</p></section><div class="review-content">${summary.wrongIds.map(id => {
+    const q = questions.find(q => q.id === id);
+    return `<article class="review-card"><div class="review-meta"><span class="tag">第 ${exam.ids.indexOf(id) + 1} 题 · ${types[q.type]}</span>${favoriteButton(id)}</div><h2>${esc(q.text)}</h2><p class="review-selected">你的选择：${esc(choice(q, exam.answers[id]))}</p><p class="review-answer">题库答案：${esc(choice(q, q.answer))}</p>${q.note ? `<p class="muted">${esc(q.note)}</p>` : ''}<small class="muted">原题 ${id} · PDF 第 ${q.pages.join('、')} 页</small></article>`;
+  }).join('') || '<p class="empty-state">全部答对，没有错题！</p>'}</div><div class="review-actions"><button class="primary" data-action="start" data-mode="wrong">进入错题练习<span>→</span></button><button class="secondary" data-action="exam-result">返回考试结果</button></div>`;
+}
+
 app.addEventListener('click', event => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
   const { action, mode, key } = button.dataset;
+  const now = Date.now();
+  if (action.startsWith('exam-') && checkExamTime(now)) return;
+  if (action === 'exam-setup') return examSetup();
+  if (action === 'exam-start') { startExam(state, questions); save(); return examPage(); }
+  if (action === 'exam-resume') return examPage();
+  if (action === 'exam-card') return examCard();
+  if (action === 'exam-confirm') return examConfirm();
+  if (action === 'exam-result') return examResult();
+  if (action === 'exam-review') return examReview();
+  if (action === 'exam-submit') { if (finishExam(state, questions)) save(); return examResult(); }
+  if (action === 'exam-jump' || action === 'exam-prev' || action === 'exam-next') {
+    const index = action === 'exam-jump' ? Number(button.dataset.index) : state.exam.index + (action === 'exam-prev' ? -1 : 1);
+    goExamQuestion(state, index); save(); return examPage();
+  }
+  if (action === 'exam-option') {
+    const exam = state.exam;
+    const q = questions.find(q => q.id === exam.ids[exam.index]);
+    const chosen = exam.answers[q.id] || [];
+    const next = q.type === 'multiple' ? chosen.includes(key) ? chosen.filter(k => k !== key) : [...chosen, key] : chosen.includes(key) ? [] : [key];
+    setExamAnswer(state, questions, next, now); save(); return examPage();
+  }
   if (action === 'home') { selected = []; window.scrollTo(0, 0); return home(); }
   if (action === 'more') return more();
   if (action === 'resume') return quiz();
@@ -220,7 +307,10 @@ async function initialize() {
     let stored = null;
     try { stored = localStorage.getItem(STORAGE_KEY); } catch { flash('浏览器不允许保存进度，当前练习仍可进行。'); }
     state = restoreState(stored, questions);
+    if (state.exam && !examSeconds(state.exam)) { finishExam(state, questions); save(); }
     home(); prepareOffline();
+    setInterval(checkExamTime, 1000);
+    document.addEventListener('visibilitychange', () => checkExamTime());
   } catch {
     app.innerHTML = '<div class="loading"><span class="brand-icon">C3</span><h2>题库还没准备好</h2><p>请联网后重试；首次使用需要下载完整题库。</p><button class="primary" id="retry">重新加载</button></div>';
     document.querySelector('#retry').addEventListener('click', () => location.reload());

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { freshState, restoreState, isCorrect, startRound, recordAnswer, advanceRound, toggleFavorite, roundSummary } from '../public/engine.js';
+import { freshState, restoreState, isCorrect, startRound, recordAnswer, advanceRound, toggleFavorite, roundSummary, EXAM_RULES, startExam, setExamAnswer, goExamQuestion, examSeconds, examSummary, finishExam } from '../public/engine.js';
 
 const { source, questions } = JSON.parse(readFileSync(new URL('../public/questions.json', import.meta.url)));
 
@@ -217,4 +217,114 @@ test('本组错题重练切换后保留原组，其他模式完成后仍可继�
   assert.deepEqual(startRound(state, questions, 'retry'), retry);
   recordAnswer(state, questions, ['D']);
   assert.deepEqual(advanceRound(state), { mode: 'retry', total: 1, correct: 1 });
+});
+
+test('模拟卷题型配额、修改答案与跳题、断点恢复，不提前影响练习记录', () => {
+  let state = freshState();
+  startRound(state, questions, 'multiple', () => .4);
+  state.session.draft = ['A', 'C'];
+  const practice = structuredClone(state.session);
+  const now = 1800000000000;
+  const exam = startExam(state, questions, now, () => .3);
+  assert.equal(exam.ids.length, EXAM_RULES.total);
+  assert.equal(new Set(exam.ids).size, 100);
+  const counts = {};
+  exam.ids.forEach(id => { const type = questions[id - 1].type; counts[type] = (counts[type] || 0) + 1; });
+  assert.deepEqual(counts, EXAM_RULES.counts);
+  assert.equal(startExam(state, questions, now + 10000), exam);
+  setExamAnswer(state, questions, ['A'], now + 1000);
+  setExamAnswer(state, questions, ['B'], now + 2000);
+  assert.deepEqual(exam.answers[exam.ids[0]], ['B']);
+  assert.throws(() => setExamAnswer(state, questions, ['A', 'B'], now + 2000));
+  assert.throws(() => goExamQuestion(state, 100));
+  goExamQuestion(state, 40);
+  setExamAnswer(state, questions, ['A', 'C'], now + 3000);
+  assert.equal('correct' in exam.answers[exam.ids[40]], false);
+  assert.deepEqual(state.records, {});
+  assert.deepEqual(state.session, practice);
+  assert.equal(state.cursor, 0);
+  state = restoreState(JSON.stringify(state), questions);
+  assert.equal(state.exam.index, 40);
+  assert.equal(state.exam.deadline, now + 3600000);
+  assert.deepEqual(state.exam.answers[state.exam.ids[40]], ['A', 'C']);
+  setExamAnswer(state, questions, [], now + 4000);
+  assert.equal(state.exam.answers[state.exam.ids[40]], undefined);
+  assert.deepEqual(state.session, practice);
+});
+
+test('模拟考试统一评分、多选全对才得分、未答计错，交卷不重复记次数', () => {
+  let state = freshState();
+  const now = 1800000000000;
+  const exam = startExam(state, questions, now, () => .37);
+  for (let i = 0; i < 60; i++) {
+    goExamQuestion(state, i);
+    setExamAnswer(state, questions, questions[exam.ids[i] - 1].answer, now + 1000);
+  }
+  assert.equal(examSummary(exam, questions).score, 60);
+  assert.equal(examSummary(exam, questions).passed, true);
+  const multiIndex = exam.ids.findIndex(id => questions[id - 1].type === 'multiple' && questions[id - 1].answer.length > 1);
+  goExamQuestion(state, multiIndex);
+  setExamAnswer(state, questions, questions[exam.ids[multiIndex] - 1].answer.slice(0, -1), now + 2000);
+  const summary = finishExam(state, questions, now + 3000);
+  assert.equal(summary.score, 59);
+  assert.equal(summary.passed, false);
+  assert.equal(summary.unanswered, 40);
+  assert.equal(summary.wrongIds.length, 41);
+  assert.equal(state.exam, null);
+  assert.equal(Object.keys(state.records).length, 100);
+  assert.equal(state.records[exam.ids[99]].correct, false);
+  assert.equal(state.records[exam.ids[0]].attempts, 1);
+  const result = structuredClone(state.lastExam);
+  assert.equal(finishExam(state, questions, now + 4000), null);
+  assert.deepEqual(state.lastExam, result);
+  assert.equal(state.records[exam.ids[0]].attempts, 1);
+  state = restoreState(JSON.stringify(state), questions);
+  assert.equal(examSummary(state.lastExam, questions).score, 59);
+  assert.equal(state.lastExam.submittedAt, now + 3000);
+  const perfect = freshState();
+  startExam(perfect, questions, now);
+  for (let i = 0; i < 100; i++) {
+    goExamQuestion(perfect, i);
+    setExamAnswer(perfect, questions, questions[perfect.exam.ids[i] - 1].answer, now + 1000);
+  }
+  const fullScore = finishExam(perfect, questions, now + 2000);
+  assert.equal(fullScore.score, 100);
+  assert.equal(fullScore.unanswered, 0);
+  assert.deepEqual(fullScore.wrongIds, []);
+});
+
+test('考试截止时间离线恢复不重置，到期不能修改答案，损坏试卷不影响普通进度', () => {
+  let state = freshState();
+  state.cursor = 27;
+  startRound(state, questions, 'sequential');
+  const now = 1800000000000;
+  startExam(state, questions, now, () => .4);
+  setExamAnswer(state, questions, ['A'], now + 1000);
+  state = restoreState(JSON.stringify(state), questions);
+  assert.equal(examSeconds(state.exam, now + 3599999), 1);
+  assert.equal(examSeconds(state.exam, now + 3600000), 0);
+  const answers = structuredClone(state.exam.answers);
+  assert.throws(() => setExamAnswer(state, questions, ['B'], now + 3600000));
+  assert.deepEqual(state.exam.answers, answers);
+  finishExam(state, questions, now + 3600000);
+  assert.equal(state.lastExam.submittedAt, state.lastExam.deadline);
+  assert.equal(state.cursor, 27);
+  assert.equal(state.session.ids[0], 28);
+  startExam(state, questions, now + 4000000);
+  const valid = JSON.stringify(state);
+  const corruptions = [
+    e => { e.ids[1] = e.ids[0]; },
+    e => { e.deadline += 1000; },
+    e => { e.index = 100; },
+    e => { e.answers[e.ids[0]] = ['X']; },
+    e => { e.ids = Array.from({ length: 100 }, (_, i) => i + 1); }
+  ];
+  for (const corrupt of corruptions) {
+    const raw = JSON.parse(valid); corrupt(raw.exam);
+    const restored = restoreState(JSON.stringify(raw), questions);
+    assert.equal(restored.exam, null);
+    assert.equal(restored.cursor, 27);
+    assert.equal(restored.session.ids[0], 28);
+    assert.ok(restored.lastExam);
+  }
 });
