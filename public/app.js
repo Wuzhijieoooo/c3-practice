@@ -1,4 +1,4 @@
-import { STORAGE_KEY, restoreState, startRound, recordAnswer, advanceRound, toggleFavorite, roundSummary, EXAM_RULES, startExam, examSeconds, setExamAnswer, goExamQuestion, examSummary, finishExam } from './engine.js?v=9';
+import { STORAGE_KEY, restoreState, startRound, recordAnswer, advanceRound, toggleFavorite, roundSummary, EXAM_RULES, startExam, examSeconds, setExamAnswer, goExamQuestion, examSummary, finishExam } from './engine.js?v=11';
 
 const app = document.querySelector('#app');
 const notice = document.querySelector('#notice');
@@ -28,10 +28,7 @@ function closeInstall() {
 }
 const names = { sequential: '顺序练习', random: '随机练习', wrong: '错题重刷', single: '单选专项', multiple: '多选专项', boolean: '判断专项', favorites: '收藏练习', retry: '本组错题重练' };
 const types = { single: '单选题', multiple: '多选题', boolean: '判断题' };
-let questions, state, selected = [], view = 'home', offlineReady = false;
-function updateViewport() { document.documentElement.style.setProperty('--viewport-height', `${window.innerHeight}px`); }
-updateViewport();
-window.addEventListener('resize', updateViewport);
+let questions, state, selected = [], view = 'home', offlineReady = false, reviewIndex = null;
 const esc = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 
 function flash(message) { notice.textContent = message; notice.classList.add('show'); clearTimeout(flash.timer); flash.timer = setTimeout(() => notice.classList.remove('show'), 5000); }
@@ -40,8 +37,13 @@ function save() {
   catch { flash('进度未能保存，请检查浏览器是否允许存储，暂时不要关闭页面。'); }
 }
 function wrongCount() { return Object.values(state.records).filter(r => !r.correct).length; }
+function icon(name) {
+  const paths = { back: 'M19 12H5m7 7-7-7 7-7', practice: 'M14 3H6v18h12V7l-4-4Zm0 0v5h4M9 12h6m-6 4h4', wrong: 'M7 7h10M7 11h6M7 15h3M5 3h12l3 3v6M5 3v18h7m9-4a4 4 0 1 1-1-3m1-3v3h-3', exam: 'M7 3h10v4H7zM5 5H3v16h9M19 9V5h-2m4 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Zm-4-2v2l1 1', favorite: 'm12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z', settings: 'M4 7h16M4 17h16M8 4v6m8 4v6' };
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="${paths[name]}"/></svg>`;
+}
+function backButton(action = 'home', label = '返回首页') { return `<button class="back" data-action="${action}" aria-label="${label}">${icon('back')}</button>`; }
 function header(back = false) {
-  return `<header>${back ? `<button class="back" data-action="${back === 'resume' ? 'resume' : 'home'}" aria-label="${back === 'resume' ? '返回当前练习' : '返回首页'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5m7 7-7-7 7-7"/></svg></button>` : '<span class="brand-icon">C3</span>'}<div class="brand"><strong>通勤刷题</strong><small>安全员 C3 · 专属题库</small></div><button class="status ${offlineReady ? 'ready' : ''}" data-action="install">${offlineReady ? '● 离线可用' : '添加到主屏幕 ↗'}</button></header>`;
+  return `<header>${back ? backButton(back === 'resume' ? 'resume' : 'home', back === 'resume' ? '返回当前练习' : '返回首页') : '<span class="brand-icon">C3</span>'}<div class="brand"><strong>通勤刷题</strong><small>安全员 C3 · 专属题库</small></div><button class="status ${offlineReady ? 'ready' : ''}" data-action="install">${offlineReady ? '● 离线可用' : '添加到主屏幕 ↗'}</button></header>`;
 }
 function favoriteButton(id) {
   const favorite = state.favorites.includes(id);
@@ -73,18 +75,22 @@ function review() {
   }).join('') || '<p class="empty-state">这一组全部拿下，继续保持！</p>'}</div><div class="review-actions">${wrong.length || pending('retry') ? `<button class="primary" data-action="start" data-mode="retry">${pending('retry') ? '继续上次错题重练' : '重练本组错题'}<span>→</span></button>` : ''}<button class="secondary" data-action="last-result">返回本组结果</button></div>`;
   window.scrollTo(0, 0);
 }
+function settings() {
+  view = 'settings'; app.className = 'more-view settings-view';
+  const large = document.documentElement.dataset.textSize === 'large';
+  app.innerHTML = `${header(true)}<section class="page-intro"><h1>设置</h1><p>调整阅读方式，了解安装与离线使用。</p></section><div class="exam-panel"><section class="settings-card"><h2>答题字号</h2><p>同时应用于练习、考试与错题回顾。</p><div class="font-options"><button data-action="text-size" data-size="normal" aria-pressed="${!large}">标准</button><button data-action="text-size" data-size="large" aria-pressed="${large}">大字</button></div></section><button class="practice-row" data-action="install"><span><strong>安装与离线使用说明</strong><small>添加到主屏幕，通勤时离线刷题</small></span><span class="arrow-symbol">›</span></button><p class="hint">答题进度保存在当前设备。清除网站数据会删除进度。</p></div>`;
+}
 function home() {
-  view = 'home';
+  view = 'home'; reviewIndex = null;
   app.className = 'home-view';
   const resume = state.session || state.paused.sequential || Object.values(state.paused)[0];
   const learned = Object.keys(state.records).length;
-  const mastered = Object.values(state.records).filter(r => r.correct).length;
   const progress = Math.round(learned / questions.length * 100);
-  app.innerHTML = `${header()}<section class="intro"><h1>今天，再练十题<span class="accent">。</span></h1><p>利用一点通勤时间，慢慢把题库变熟悉。</p></section>
-    <section class="progress-card"><div class="row"><strong>你的题库足迹</strong><span>${progress}%</span></div><div class="track" role="progressbar" aria-label="题库已练进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}"><i style="width:${progress}%"></i></div><div class="stats"><div><b>${learned}<small> / ${questions.length}</small></b><span>已练题目</span></div><div><b>${mastered}</b><span>最近答对</span></div><div><b class="orange">${wrongCount()}</b><span>待复习错题</span></div></div></section>
-    <section class="start-card"><div class="row"><h2>${resume ? '继续上次练习' : '顺序练习'}</h2><span class="muted">10 题 · 约 5 分钟</span></div><p>${resume ? `${names[resume.mode]} · 第 ${resume.index + 1} / ${resume.ids.length} 题` : `${state.cursor >= questions.length ? '题库已刷完，开始新一轮' : `从原题 ${questions[state.cursor].id} 开始`}`}</p><button class="primary" data-action="start" data-mode="${resume?.mode || 'sequential'}">${resume ? '继续上次练习' : '开始 10 题练习'}<span>→</span></button></section>
-    <div class="mode-grid"><button class="mode-card" data-action="start" data-mode="random"><span class="mode-icon">⇄</span><strong>随机练习</strong><small>${practiceDetail('random', '换个顺序，检验记忆')}</small><span class="arrow">↗</span></button><button class="mode-card" data-action="start" data-mode="wrong"><span class="mode-icon orange">↻</span><strong>错题重刷 <em>${wrongCount()}</em></strong><small>${practiceDetail('wrong', '答对后移出错题本')}</small><span class="arrow">↗</span></button></div>
-    <footer><span>${questions.length} 道原题 · 2025 年 7 月题库</span><div class="footer-actions"><button class="more-link" data-action="more">更多练习 ↗</button><button class="more-link" data-action="exam-setup">模拟考试</button><button data-action="install">安装与离线使用说明 ↗</button></div></footer>`;
+  app.innerHTML = `${header()}<div class="home-content"><section class="intro"><h1>今天，再练十题<span class="accent">。</span></h1><p>利用通勤时间，慢慢把题库变熟悉。</p></section>
+    <section class="progress-card"><div class="row"><strong>题库进度</strong><span>${progress}%</span></div><div class="track" role="progressbar" aria-label="题库已练进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}"><i style="width:${progress}%"></i></div><div class="stats"><div><span>已练题目</span><b>${learned}<small> / ${questions.length}</small></b></div><div><span>待复习</span><b class="orange">${wrongCount()}</b></div></div></section>
+    <section class="start-card"><span class="eyebrow">${resume ? names[resume.mode] : '顺序练习'}</span><h2>${resume ? '继续上次练习' : '从十题开始'}</h2><p>${resume ? `已完成 ${Object.keys(resume.answers).length} / ${resume.ids.length} 题` : state.cursor >= questions.length ? '题库已刷完，开始新一轮' : `从原题 ${questions[state.cursor].id} 开始 · 每组 10 题`}</p><button class="primary" data-action="start" data-mode="${resume?.mode || 'sequential'}">${resume ? '继续答题' : '开始 10 题练习'}<span>→</span></button></section>
+    <div class="home-entries"><button class="home-entry mode-card" data-action="more" aria-label="专项练习与更多练习"><span class="entry-icon">${icon('practice')}</span><span><strong>专项练习</strong><small>单选、多选、判断 · 更多练习</small></span><span class="entry-arrow">›</span></button><button class="home-entry mode-card" data-action="start" data-mode="wrong"><span class="entry-icon">${icon('wrong')}</span><span><strong>错题复习${wrongCount() ? ` <em>${wrongCount()}</em>` : ''}</strong><small>${practiceDetail('wrong', '先把不熟的题练一遍')}</small></span><span class="entry-arrow">›</span></button><button class="home-entry mode-card" data-action="exam-setup" aria-label="模拟考试"><span class="entry-icon">${icon('exam')}</span><span><strong>模拟考试</strong><small>${state.exam ? `已答 ${Object.keys(state.exam.answers).length} / ${EXAM_RULES.total} 题 · 继续考试` : `${EXAM_RULES.total} 题 · ${EXAM_RULES.minutes} 分钟`}</small></span><span class="entry-arrow">›</span></button></div>
+    <div class="home-utilities"><button data-action="start" data-mode="favorites">${icon('favorite')}<span>收藏练习</span><span>›</span></button><button data-action="settings" aria-label="设置">${icon('settings')}<span>设置</span><span>›</span></button></div><footer>${questions.length} 道原题 · 2025 年 7 月题库</footer></div>`;
 }
 function quiz({ picked = null, reveal = false } = {}) {
   const previousQuestion = app.querySelector('.quiz-content')?.dataset.question;
@@ -93,7 +99,8 @@ function quiz({ picked = null, reveal = false } = {}) {
   app.className = 'quiz-view';
   const s = state.session;
   if (!s) return home();
-  const q = questions.find(q => q.id === s.ids[s.index]);
+  const index = reviewIndex ?? s.index;
+  const q = questions.find(q => q.id === s.ids[index]);
   const previousContent = app.querySelector('.quiz-content');
   const scrollTop = previousContent?.dataset.question === String(q.id) ? previousContent.scrollTop : 0;
   const answer = s.answers[q.id];
@@ -104,7 +111,10 @@ function quiz({ picked = null, reveal = false } = {}) {
     const wrong = answer && checked && !correct;
     return `<button class="option ${checked ? 'selected' : ''} ${correct ? 'correct' : ''} ${wrong ? 'incorrect' : ''}" data-action="option" data-key="${esc(o.key)}" aria-pressed="${checked}" ${answer ? 'disabled' : ''}><span class="option-key">${esc(o.key)}</span><span>${esc(o.text)}</span><span class="option-mark">${correct ? '✓' : wrong ? '×' : checked ? '✓' : ''}</span></button>`;
   }).join('');
-  app.innerHTML = `${header(true)}<div class="quiz-heading"><button class="switch-practice" data-action="more" aria-label="切换练习">${names[s.mode]}<span>⇄ 切换</span></button><strong>${s.index + 1}<small> / ${s.ids.length}</small></strong></div><div class="track"><i style="width:${(s.index + (answer ? 1 : 0)) / s.ids.length * 100}%"></i></div><div class="quiz-content" data-question="${q.id}"><section class="question"><div class="question-meta"><span class="tag">${types[q.type]}</span><span>原题 ${q.id} · PDF 第 ${q.pages.join('、')} 页</span>${favoriteButton(q.id)}</div><h1>${esc(q.text)}</h1><p class="hint">${q.type === 'multiple' ? '选择所有正确选项，再提交答案' : '点击选项，立即查看答案'}</p><div class="options">${options}</div></section></div>${answer ? `<section class="feedback ${answer.correct ? 'good' : 'bad'}" role="status"><strong>${answer.correct ? '✓ 答对了，继续保持' : '再记一次，下次就会了'}</strong><p>题库答案：<b>${esc(q.answer.join('、'))}</b>${answer.correct ? '' : `　你的选择：${esc(answer.selected.join('、'))}`}</p>${q.note ? `<p class="source-note">${esc(q.note)}</p>` : ''}<small>${answer.correct ? '已记录这次练习' : '已加入错题本，答对后自动移出'}</small></section>` : ''}<div class="quiz-actions">${answer ? `<button class="primary" data-action="next">${s.index + 1 === s.ids.length ? '查看本组结果' : '下一题'}<span>→</span></button>` : q.type === 'multiple' ? `<button class="primary" data-action="submit" ${selected.length ? '' : 'disabled'}>提交答案<span>→</span></button>` : '<p class="muted centered">点击选项即可作答</p>'}</div>`;
+  const choice = keys => keys.map(key => `${key}. ${q.options.find(o => o.key === key).text}`).join('；');
+  const missing = answer ? q.answer.filter(key => !answer.selected.includes(key)) : [];
+  const extra = answer ? answer.selected.filter(key => !q.answer.includes(key)) : [];
+  app.innerHTML = `<header class="quiz-toolbar">${backButton()}<div class="quiz-heading"><span>${names[s.mode]}</span><strong>${index + 1}<small> / ${s.ids.length}</small></strong></div><button class="switch-practice" data-action="more" aria-label="切换练习">⇄ 切换</button></header><div class="track"><i style="width:${Object.keys(s.answers).length / s.ids.length * 100}%"></i></div><div class="quiz-content" data-question="${q.id}"><section class="question"><div class="question-meta"><span class="tag">${types[q.type]}</span><span>原题 ${q.id}</span>${favoriteButton(q.id)}</div><h1>${esc(q.text)}</h1><p class="hint">${reviewIndex !== null ? '回看已答题目 · 原选择与得分保持不变' : q.type === 'multiple' ? '选择所有正确选项，再提交答案' : '点击选项，立即查看答案'}</p><div class="options">${options}</div><details class="question-source"><summary>题目来源</summary><p>原题 ${q.id} · PDF 第 ${q.pages.join('、')} 页</p></details></section></div>${answer ? `<section class="feedback ${answer.correct ? 'good' : 'bad'}" role="status" tabindex="0" aria-label="答题反馈"><strong>${answer.correct ? '✓ 答对了，继续保持' : '再记一次，下次就会了'}</strong><p>题库答案：<b>${esc(choice(q.answer))}</b></p>${answer.correct ? '' : `<p>你的选择：${esc(choice(answer.selected))}</p>`}${q.type === 'multiple' && !answer.correct ? `<p class="answer-diff">${extra.length ? `错选：${esc(extra.join('、'))}` : ''}${extra.length && missing.length ? '　' : ''}${missing.length ? `漏选：${esc(missing.join('、'))}` : ''}</p>` : ''}${q.note ? `<p class="source-note">${esc(q.note)}</p>` : ''}</section>` : ''}<div class="quiz-actions practice-navigation"><button class="secondary" data-action="previous" ${index > 0 ? '' : 'disabled'}>上一题</button>${answer ? `<button class="primary" data-action="next">${reviewIndex === null && s.index + 1 === s.ids.length ? '查看本组结果' : '下一题'}<span>→</span></button>` : q.type === 'multiple' ? `<button class="primary" data-action="submit" ${selected.length ? '' : 'disabled'}>提交答案<span>→</span></button>` : '<button class="primary" data-action="next" disabled>下一题<span>→</span></button>'}</div>`;
   app.querySelector('.quiz-content').scrollTop = scrollTop;
   if (previousQuestion !== String(q.id)) app.querySelector('.question').classList.add('question-enter');
   if (picked) app.querySelector(`button[data-key="${picked}"]`).classList.add('option-tap');
@@ -237,9 +247,16 @@ app.addEventListener('click', event => {
     const next = q.type === 'multiple' ? chosen.includes(key) ? chosen.filter(k => k !== key) : [...chosen, key] : chosen.includes(key) ? [] : [key];
     setExamAnswer(state, questions, next, now); save(); return examPage();
   }
-  if (action === 'home') { selected = []; window.scrollTo(0, 0); return home(); }
+  if (action === 'home') { reviewIndex = null; selected = []; window.scrollTo(0, 0); return home(); }
   if (action === 'more') return more();
-  if (action === 'resume') return quiz();
+  if (action === 'resume') { reviewIndex = null; return quiz(); }
+  if (action === 'settings') return settings();
+  if (action === 'text-size') {
+    const size = button.dataset.size === 'large' ? 'large' : 'normal';
+    document.documentElement.dataset.textSize = size;
+    try { localStorage.setItem('c3-text-size', size); } catch { flash('字号暂时无法保存，本次仍然生效。'); }
+    return settings();
+  }
   if (action === 'review') return review();
   if (action === 'last-result') return result(roundSummary(state.lastRound), false);
   if (action === 'favorite') {
@@ -252,8 +269,9 @@ app.addEventListener('click', event => {
   if (action === 'install') return openInstall();
   if (action === 'start') {
     if (!startRound(state, questions, mode)) return flash(mode === 'favorites' ? '还没有收藏，在答题时点击 ☆ 收藏试试。' : mode === 'retry' ? '这一组没有错题，去练一组新题吧。' : '现在没有错题，去练一组新题吧。');
-    selected = []; save(); window.scrollTo(0, 0); return quiz();
+    reviewIndex = null; selected = []; save(); window.scrollTo(0, 0); return quiz();
   }
+  if (reviewIndex !== null && (action === 'option' || action === 'submit')) return;
   if (action === 'option') {
     const q = questions.find(q => q.id === state.session.ids[state.session.index]);
     if (state.session.answers[q.id]) return;
@@ -266,6 +284,15 @@ app.addEventListener('click', event => {
     selected = [key]; recordAnswer(state, questions, selected); save(); return quiz({ picked: key, reveal: true });
   }
   if (action === 'submit') { recordAnswer(state, questions, selected); save(); return quiz({ reveal: true }); }
+  if (action === 'previous') {
+    const index = reviewIndex ?? state.session.index;
+    if (index > 0) { reviewIndex = index - 1; return quiz(); }
+    return;
+  }
+  if (action === 'next' && reviewIndex !== null) {
+    reviewIndex = reviewIndex + 1 < state.session.index ? reviewIndex + 1 : null;
+    return quiz();
+  }
   if (action === 'next') { const summary = advanceRound(state); selected = []; save(); window.scrollTo(0, 0); return summary ? result(summary) : quiz(); }
 });
 dialog.addEventListener('click', event => { if (event.target.closest('.close, .close-dialog') || event.target === dialog) closeInstall(); });
@@ -307,6 +334,7 @@ async function initialize() {
     let stored = null;
     try { stored = localStorage.getItem(STORAGE_KEY); } catch { flash('浏览器不允许保存进度，当前练习仍可进行。'); }
     state = restoreState(stored, questions);
+    try { document.documentElement.dataset.textSize = localStorage.getItem('c3-text-size') === 'large' ? 'large' : 'normal'; } catch {}
     if (state.exam && !examSeconds(state.exam)) { finishExam(state, questions); save(); }
     home(); prepareOffline();
     setInterval(checkExamTime, 1000);

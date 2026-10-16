@@ -40,8 +40,35 @@ const centeredBack = async (target = page) => {
   assert.equal(await button.evaluate(el => getComputedStyle(el).padding), '0px');
 };
 const setState = async state => { await page.evaluate(state => localStorage.setItem('c3-practice-v1', JSON.stringify(state)), state); await page.reload(); await page.waitForSelector('.start-card'); };
+// Exercise the Safari 14 fallback independently of newer overscroll CSS support.
+const boundaryDrag = (locator, dy, fingers = 1) => locator.evaluate((el, {dy, fingers}) => {
+  const dispatch = (type, y) => {
+    const event = new Event(type, {bubbles:true, cancelable:true});
+    Object.defineProperty(event, 'touches', {value:Array.from({length:fingers}, () => ({clientX:100, clientY:y}))});
+    el.dispatchEvent(event);
+    return event.defaultPrevented;
+  };
+  dispatch('touchstart', 200);
+  return dispatch('touchmove', 200 + dy);
+}, {dy, fingers});
 
 try {
+  const slowContext = await browser.newContext({viewport:{width:390,height:844}, isMobile:true, hasTouch:true, serviceWorkers:'block'});
+  const slowPage = await slowContext.newPage();
+  let releaseBank;
+  const bankGate = new Promise(resolve => { releaseBank = resolve; });
+  await slowPage.route('**/questions.json', async route => { await bankGate; await route.continue(); });
+  await slowPage.goto(base, {waitUntil:'domcontentloaded'});
+  await slowPage.locator('.loading').waitFor();
+  assert.equal(await slowPage.locator('body').evaluate(el => getComputedStyle(el).position), 'fixed');
+  assert.equal(await boundaryDrag(slowPage.locator('.loading'), 60), true, '慢加载期间下拉不能拖动整页');
+  assert.equal(await boundaryDrag(slowPage.locator('.loading'), -60), true, '慢加载期间上推不能拖动整页');
+  assert.equal(await boundaryDrag(slowPage.locator('.loading'), 60, 2), false, '保留双指缩放');
+  await slowPage.mouse.wheel(0, 400);
+  assert.equal(await slowPage.evaluate(() => window.scrollY), 0);
+  releaseBank();
+  await slowPage.waitForSelector('.home-content');
+  await slowContext.close();
   await page.goto(base);
   await page.getByRole('button', { name: '● 离线可用', exact: true }).waitFor();
   for (const viewport of [{ width: 390, height: 844 }, { width: 375, height: 667 }, { width: 320, height: 568 }]) {
@@ -49,7 +76,25 @@ try {
     await oneScreen(); await noOverflow();
     const wrong = await page.locator('.mode-card[data-mode="wrong"]').boundingBox();
     assert.ok(wrong.y + wrong.height <= viewport.height, '首页错题入口必须无需滚动即可看到');
+    const content = await page.locator('.home-content').evaluate(el => ({height:el.clientHeight, full:el.scrollHeight}));
+    assert.ok(content.full <= content.height + 1, `首页内容需一屏显示: ${JSON.stringify(content)}`);
+    const settings = await page.getByRole('button', { name: '设置', exact: true }).boundingBox();
+    assert.ok(settings.y + settings.height <= viewport.height, '设置入口需一屏显示');
     await shot(`home-${viewport.width}`);
+  }
+  assert.equal(await boundaryDrag(page.locator('.home-content'), 60), true, '首页下拉不能带动外层页面');
+  assert.equal(await boundaryDrag(page.locator('.home-content'), -60), true, '首页上推不能带动外层页面');
+  for (const viewport of [{width:375,height:812}, {width:390,height:844}]) {
+    await page.setViewportSize(viewport);
+    await oneScreen();
+    await page.locator('#app').evaluate(el => {
+      const style = getComputedStyle(el);
+      el.style.paddingTop = `${parseFloat(style.paddingTop) + 44}px`;
+      el.style.paddingBottom = `${parseFloat(style.paddingBottom) + 34}px`;
+    });
+    const content = await page.locator('.home-content').evaluate(el => ({height:el.clientHeight, full:el.scrollHeight}));
+    assert.ok(content.full <= content.height + 1, `模拟安全区域后首页需一屏显示: ${JSON.stringify({viewport, ...content})}`);
+    await page.locator('#app').evaluate(el => el.removeAttribute('style'));
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await noOverflow(); await shot('home');
@@ -60,7 +105,7 @@ try {
     if (viewport.width === 320) await shot('back-small');
   }
   await page.locator('header .back svg').click();
-  await page.getByRole('button', { name: '继续上次练习', exact: false }).click();
+  await page.getByRole('button', { name: '继续答题', exact: false }).click();
   await page.locator('[data-key="A"]').click();
   assert.match(await page.locator('.feedback').innerText(), /再记一次/);
   assert.match(await page.locator('.feedback').innerText(), /题库答案：D/);
@@ -69,10 +114,21 @@ try {
   await oneScreen(); await visibleAction();
   await shot('incorrect');
   await page.reload();
-  await page.getByRole('button', { name: '继续上次练习' }).click();
+  await page.getByRole('button', { name: '继续答题' }).click();
   assert.equal(await page.locator('.option:disabled').count(), 4);
   await page.getByRole('button', { name: '下一题' }).click();
   assert.equal(await page.locator('.question').evaluate(element => getComputedStyle(element).animationName), 'question-in');
+  const beforeReview = await page.evaluate(() => localStorage.getItem('c3-practice-v1'));
+  await page.getByRole('button', { name: '上一题', exact: true }).click();
+  assert.match(await page.locator('.feedback').innerText(), /题库答案：D\. 安全/);
+  assert.equal(await page.locator('.option:disabled').count(), 4);
+  assert.equal(await page.locator('[data-action=previous]').isDisabled(), true);
+  await page.locator('.option-key').first().dispatchEvent('click');
+  assert.equal(await page.evaluate(() => localStorage.getItem('c3-practice-v1')), beforeReview, '回看不能改写进度或次数');
+  await page.getByRole('button', { name: '下一题', exact: false }).click();
+  assert.equal(await page.locator('.feedback').count(), 0);
+  assert.match(await page.locator('.question-meta').innerText(), /原题 2/);
+  assert.equal(await page.evaluate(() => localStorage.getItem('c3-practice-v1')), beforeReview);
   for (let index = 1; index < 10; index++) {
     await page.locator(`[data-key="${questions[index].answer[0]}"]`).click();
     await page.getByRole('button', { name: index === 9 ? '查看本组结果' : '下一题' }).click();
@@ -106,7 +162,7 @@ try {
   assert.match(await page.locator('.question-meta').innerText(), /原题 1/);
   await page.getByRole('button', { name: '取消收藏', exact: true }).click();
   await page.reload();
-  await page.getByRole('button', { name: '继续上次练习' }).click();
+  await page.getByRole('button', { name: '继续答题' }).click();
   assert.equal(await page.getByRole('button', { name: '收藏题目', exact: true }).count(), 1);
   await page.locator('[data-key="D"]').click();
   await page.getByRole('button', { name: '查看本组结果', exact: false }).click();
@@ -124,7 +180,7 @@ try {
     assert.ok(ids.every(id => questions[id - 1].type === type));
     await page.getByRole('button', { name: '收藏题目', exact: true }).click();
     await page.reload();
-    await page.getByRole('button', { name: '继续上次练习' }).click();
+    await page.getByRole('button', { name: '继续答题' }).click();
     assert.equal(await page.getByRole('button', { name: '取消收藏', exact: true }).count(), 1);
     assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('c3-practice-v1')).cursor), 12);
   }
@@ -133,7 +189,7 @@ try {
   await page.getByRole('button', { name: '开始 10 题练习' }).click();
   await page.locator('[data-key="A"]').click();
   await page.reload();
-  await page.getByRole('button', { name: '继续上次练习' }).click();
+  await page.getByRole('button', { name: '继续答题' }).click();
   assert.equal(await page.locator('[data-key="A"]').getAttribute('aria-pressed'), 'true');
   assert.equal(await page.locator('.feedback').count(), 0);
   for (const key of ['C','D','E']) await page.locator(`[data-key="${key}"]`).click();
@@ -153,6 +209,7 @@ try {
   await page.locator('[data-key="A"]').click();
   assert.match(await page.locator('.feedback').innerText(), /答对了/);
   await page.locator('header [data-action="home"]').click();
+  await page.getByRole('button', { name: '设置', exact: true }).click();
   await page.getByRole('button', { name: '安装与离线使用说明' }).click();
   assert.equal(await page.locator('dialog').isVisible(), true);
   await page.getByRole('button', { name: '知道了' }).click();
@@ -167,11 +224,13 @@ try {
   await safari14Page.goto(base);
   await safari14Page.getByRole('button', { name: '● 离线可用', exact: true }).waitFor();
   assert.equal(await safari14Page.locator('#install-dialog').isVisible(), false);
+  await safari14Page.getByRole('button', { name: '设置', exact: true }).click();
   await safari14Page.getByRole('button', { name: '安装与离线使用说明' }).click();
   assert.equal(await safari14Page.locator('#install-dialog').isVisible(), true);
   assert.equal(await safari14Page.locator('#install-backdrop').isVisible(), true);
   await safari14Page.getByRole('button', { name: '知道了' }).click();
   assert.equal(await safari14Page.locator('#install-dialog').isVisible(), false);
+  await safari14Page.getByRole('button', { name: '返回首页', exact: true }).click();
   await safari14Page.getByRole('button', { name: '更多练习', exact: false }).click();
   await centeredBack(safari14Page);
   assert.equal(await safari14Page.locator('.practice-row').count(), 8);
@@ -198,7 +257,7 @@ try {
   await page.getByRole('button', { name: '更多练习', exact: false }).click();
   assert.equal(await page.locator('.practice-row').count(), 8);
   await page.locator('header [data-action="home"]').click();
-  await page.getByRole('button', { name: '继续上次练习' }).click();
+  await page.getByRole('button', { name: '继续答题' }).click();
   assert.match(await page.locator('.feedback').innerText(), /答对了/);
   await page.getByRole('button', { name: '下一题' }).click();
   await page.locator(`[data-key="${questions[1201].answer[0]}"]`).click();
@@ -221,9 +280,26 @@ try {
   const longMultiple = questions.filter(q => q.type === 'multiple').sort((a,b) => (b.text.length + b.options.map(o => o.text).join('').length) - (a.text.length + a.options.map(o => o.text).join('').length))[0];
   await setState({ cursor: longMultiple.id - 1, records: {}, session: null });
   await page.getByRole('button', { name: '开始 10 题练习' }).click();
+  if (browserType === 'chromium') {
+    const touch = await context.newCDPSession(page);
+    const box = await page.locator('.quiz-content').boundingBox();
+    const x = box.x + box.width / 2, y = box.y + Math.min(box.height - 20, 240);
+    await touch.send('Input.dispatchTouchEvent', {type:'touchStart', touchPoints:[{x,y}]});
+    for (let step = 1; step <= 6; step++) {
+      await touch.send('Input.dispatchTouchEvent', {type:'touchMove', touchPoints:[{x,y:y - step * 22}]});
+      await page.evaluate(() => new Promise(requestAnimationFrame));
+    }
+    await touch.send('Input.dispatchTouchEvent', {type:'touchEnd', touchPoints:[]});
+    await page.waitForFunction(() => document.querySelector('.quiz-content').scrollTop > 0);
+    assert.equal(await page.evaluate(() => window.scrollY), 0, '实际触摸滑动只移动内容区');
+    await touch.detach();
+  }
   await page.locator('.quiz-content').evaluate(element => { element.scrollTop = element.scrollHeight; });
   const before = await page.locator('.quiz-content').evaluate(element => element.scrollTop);
   assert.ok(before > 0);
+  assert.equal(await boundaryDrag(page.locator('.quiz-content'), -40), true, '长题到底后阻止继续上推');
+  assert.equal(await boundaryDrag(page.locator('.quiz-content'), 40), false, '长题到底后仍能向回滚动');
+  assert.equal(await page.locator('.quiz-content').evaluate(el => getComputedStyle(el, '::-webkit-scrollbar').display), 'none');
   await page.locator('.option').last().click();
   assert.equal(await page.locator('.quiz-content').evaluate(element => element.scrollTop), before);
   await visibleAction();
@@ -263,13 +339,13 @@ try {
   await page.locator('[data-key="D"]').click();
   await page.getByRole('button', { name: '查看本组结果', exact: false }).click();
   await page.getByRole('button', { name: '今天先到这里' }).click();
-  await page.getByRole('button', { name: '继续上次练习', exact: false }).click();
+  await page.getByRole('button', { name: '继续答题', exact: false }).click();
   assert.match(await page.locator('.quiz-heading').innerText(), /顺序练习.*2.*10/s);
   await page.getByRole('button', { name: '切换练习', exact: true }).click();
   await page.locator('[data-mode="multiple"]').click();
   await context.setOffline(true);
   await page.reload();
-  await page.getByRole('button', { name: '继续上次练习', exact: false }).click();
+  await page.getByRole('button', { name: '继续答题', exact: false }).click();
   assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('c3-practice-v1')).session.ids), multipleIds);
   for (const key of ['A','C']) assert.equal(await page.locator(`[data-key="${key}"]`).getAttribute('aria-pressed'), 'true');
   assert.equal(await page.locator('.feedback').count(), 0);
@@ -324,7 +400,7 @@ try {
   for (const key of multiAnswer) await page.locator(`[data-key="${key}"]`).click();
   assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('c3-practice-v1')).records), {});
   await page.locator('header [data-action="home"]').click();
-  await page.getByRole('button', { name: '继续上次练习', exact: false }).click();
+  await page.getByRole('button', { name: '继续答题', exact: false }).click();
   for (const key of ['A','C']) assert.equal(await page.locator(`[data-key="${key}"]`).getAttribute('aria-pressed'), 'true');
   await page.locator('header [data-action="home"]').click();
   await context.setOffline(true);
@@ -395,8 +471,32 @@ try {
   assert.match(await page.locator('.exam-result-view .eyebrow').innerText(), /超时自动交卷/);
   assert.match(await page.locator('.score').innerText(), /0.*100/s);
   await page.locator('header [data-action="home"]').click();
+  // Font preference survives reload; read-only review does not replace a multiple-choice draft.
+  await page.setViewportSize({width:390,height:844});
+  await page.getByRole('button', {name:'设置', exact:true}).click();
+  await page.getByRole('button', {name:'大字', exact:true}).click();
+  await page.reload();
+  assert.equal(await page.locator('html').getAttribute('data-text-size'), 'large');
+  await setState({cursor:800, records:{}, session:null});
+  await page.getByRole('button', {name:'开始 10 题练习'}).click();
+  assert.equal(await page.locator('.question h1').evaluate(el => getComputedStyle(el).fontSize), '23px');
+  for (const key of questions[800].answer) await page.locator(`[data-key="${key}"]`).click();
+  await page.getByRole('button', {name:'提交答案'}).click();
+  await page.getByRole('button', {name:'下一题', exact:false}).click();
+  await page.locator('[data-key="A"]').click();
+  const draftBeforeReview = await page.evaluate(() => localStorage.getItem('c3-practice-v1'));
+  await page.getByRole('button', {name:'上一题', exact:true}).click();
+  await page.getByRole('button', {name:'下一题', exact:false}).click();
+  assert.equal(await page.locator('[data-key="A"]').getAttribute('aria-pressed'), 'true');
+  assert.equal(await page.evaluate(() => localStorage.getItem('c3-practice-v1')), draftBeforeReview);
+  await oneScreen(); await visibleAction();
+  await shot('large-font');
+  await page.locator('header [data-action="home"]').click();
+  await page.getByRole('button', {name:'设置', exact:true}).click();
+  await page.getByRole('button', {name:'标准', exact:true}).click();
+  await page.locator('header [data-action="home"]').click();
   await page.setViewportSize({ width: 1280, height: 900 });
   await noOverflow(); await shot('desktop');
   assert.deepEqual(errors, []);
-  console.log(`${browserType}: mobile layout, exam grading/timer/answer card/offline restore, independent mode switching and drafts, sessions, type practice, favorites, round review and retry, offline reload, Safari dialog fallback, animations and reduced-motion PASS`);
+  console.log(`${browserType}: fixed loading/home shell, touch scrolling and boundaries, safe areas, font preferences and read-only review, mobile layout, exam grading/timer/answer card/offline restore, independent mode switching and drafts, sessions, type practice, favorites, round review and retry, offline reload, Safari dialog fallback, animations and reduced-motion PASS`);
 } finally { await browser.close(); }
