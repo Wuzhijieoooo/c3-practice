@@ -1,4 +1,4 @@
-import { STORAGE_KEY, restoreState, startRound, recordAnswer, advanceRound, toggleFavorite, roundSummary, EXAM_RULES, startExam, examSeconds, setExamAnswer, goExamQuestion, examSummary, finishExam } from './engine.js?v=8';
+import { STORAGE_KEY, restoreState, startRound, recordAnswer, advanceRound, toggleFavorite, roundSummary, EXAM_RULES, startExam, examSeconds, setExamAnswer, goExamQuestion, examSummary, finishExam } from './engine.js?v=9';
 
 const app = document.querySelector('#app');
 const notice = document.querySelector('#notice');
@@ -41,7 +41,7 @@ function save() {
 }
 function wrongCount() { return Object.values(state.records).filter(r => !r.correct).length; }
 function header(back = false) {
-  return `<header>${back ? `<button class="back" data-action="${back === 'resume' ? 'resume' : 'home'}" aria-label="${back === 'resume' ? '返回当前练习' : '返回首页'}">←</button>` : '<span class="brand-icon">C3</span>'}<div class="brand"><strong>通勤刷题</strong><small>安全员 C3 · 专属题库</small></div><button class="status ${offlineReady ? 'ready' : ''}" data-action="install">${offlineReady ? '● 离线可用' : '添加到主屏幕 ↗'}</button></header>`;
+  return `<header>${back ? `<button class="back" data-action="${back === 'resume' ? 'resume' : 'home'}" aria-label="${back === 'resume' ? '返回当前练习' : '返回首页'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5m7 7-7-7 7-7"/></svg></button>` : '<span class="brand-icon">C3</span>'}<div class="brand"><strong>通勤刷题</strong><small>安全员 C3 · 专属题库</small></div><button class="status ${offlineReady ? 'ready' : ''}" data-action="install">${offlineReady ? '● 离线可用' : '添加到主屏幕 ↗'}</button></header>`;
 }
 function favoriteButton(id) {
   const favorite = state.favorites.includes(id);

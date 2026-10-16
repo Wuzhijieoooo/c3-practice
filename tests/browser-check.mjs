@@ -28,6 +28,17 @@ const visibleAction = async () => {
   const rect = await page.locator('.quiz-actions .primary').boundingBox();
   assert.ok(rect && rect.y >= 0 && rect.y + rect.height <= page.viewportSize().height, '答题按钮必须留在屏幕内');
 };
+const centeredBack = async (target = page) => {
+  const button = target.locator('header .back');
+  const box = await button.boundingBox();
+  const icon = await button.locator('svg').boundingBox();
+  assert.ok(box && icon);
+  assert.equal(box.width, 44, '返回按钮保持 44px 宽，不被挤压');
+  assert.equal(box.height, 44, '返回按钮保持正方形');
+  assert.ok(Math.abs(box.x + box.width / 2 - icon.x - icon.width / 2) < .5, '返回图标水平居中');
+  assert.ok(Math.abs(box.y + box.height / 2 - icon.y - icon.height / 2) < .5, '返回图标垂直居中');
+  assert.equal(await button.evaluate(el => getComputedStyle(el).padding), '0px');
+};
 const setState = async state => { await page.evaluate(state => localStorage.setItem('c3-practice-v1', JSON.stringify(state)), state); await page.reload(); await page.waitForSelector('.start-card'); };
 
 try {
@@ -43,6 +54,13 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   await noOverflow(); await shot('home');
   await page.getByRole('button', { name: '开始 10 题练习' }).click();
+  for (const viewport of [{ width:320, height:568 }, { width:375, height:667 }, { width:390, height:844 }]) {
+    await page.setViewportSize(viewport);
+    await oneScreen(); await centeredBack(); await noOverflow();
+    if (viewport.width === 320) await shot('back-small');
+  }
+  await page.locator('header .back svg').click();
+  await page.getByRole('button', { name: '继续上次练习', exact: false }).click();
   await page.locator('[data-key="A"]').click();
   assert.match(await page.locator('.feedback').innerText(), /再记一次/);
   assert.match(await page.locator('.feedback').innerText(), /题库答案：D/);
@@ -61,12 +79,14 @@ try {
   }
   assert.match(await page.locator('.score').innerText(), /9.*10/s);
   await shot('result');
+  await centeredBack();
   await page.getByRole('button', { name: '查看本组错题（1）', exact: true }).click();
   assert.equal(await page.locator('.review-card').count(), 1);
   assert.match(await page.locator('.review-card').innerText(), /你的选择：A\. 规范/);
   assert.match(await page.locator('.review-card').innerText(), /题库答案：D\. 安全/);
   await page.getByRole('button', { name: '收藏题目', exact: true }).click();
   await shot('review');
+  await centeredBack();
   await page.reload();
   await page.getByRole('button', { name: '更多练习', exact: false }).click();
   await page.getByRole('button', { name: '上一组错题回顾', exact: false }).click();
@@ -81,6 +101,7 @@ try {
   await page.getByRole('button', { name: '今天先到这里' }).click();
   await page.getByRole('button', { name: '更多练习', exact: false }).click();
   await shot('more');
+  await centeredBack();
   await page.locator('[data-mode="favorites"]').click();
   assert.match(await page.locator('.question-meta').innerText(), /原题 1/);
   await page.getByRole('button', { name: '取消收藏', exact: true }).click();
@@ -152,6 +173,7 @@ try {
   await safari14Page.getByRole('button', { name: '知道了' }).click();
   assert.equal(await safari14Page.locator('#install-dialog').isVisible(), false);
   await safari14Page.getByRole('button', { name: '更多练习', exact: false }).click();
+  await centeredBack(safari14Page);
   assert.equal(await safari14Page.locator('.practice-row').count(), 8);
   await safari14Page.close();
 
@@ -273,6 +295,7 @@ try {
   await page.locator('header [data-action="home"]').click();
   await page.getByRole('button', { name: '模拟考试', exact: true }).click();
   await shot('exam-setup');
+  await centeredBack();
   await page.getByRole('button', { name: '开始模拟考试', exact: false }).click();
   const paper = await page.evaluate(() => JSON.parse(localStorage.getItem('c3-practice-v1')).exam);
   assert.equal(paper.ids.length, 100);
@@ -312,6 +335,7 @@ try {
   for (const key of multiAnswer) assert.equal(await page.locator(`[data-key="${key}"]`).getAttribute('aria-pressed'), 'true');
   await page.setViewportSize({ width: 320, height: 568 });
   await oneScreen(); await noOverflow(); await visibleAction(); await shot('exam-small');
+  await centeredBack();
   await page.getByRole('button', { name: '答题卡', exact: true }).click();
   await oneScreen(); await noOverflow();
   await page.getByRole('button', { name: '第 100 题，未答', exact: true }).click();
