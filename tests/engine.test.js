@@ -39,7 +39,9 @@ test('10 题顺序练习、重载与下一组不重复，尾组不越界', () =>
   }
   assert.equal(state.cursor, 10);
   assert.equal(startRound(state, questions, 'sequential').ids[0], 11);
-  assert.throws(() => startRound(state, questions, 'random'));
+  const sequential = state.session;
+  startRound(state, questions, 'random');
+  assert.equal(startRound(state, questions, 'sequential'), sequential);
   state.session = null; state.cursor = 1997;
   assert.deepEqual(startRound(state, questions, 'sequential').ids, [1998,1999,2000]);
   for (let i = 1997; i < 2000; i++) { recordAnswer(state, questions, questions[i].answer); advanceRound(state); }
@@ -134,4 +136,85 @@ test('本组答案快照保留、重练只取本组错题且不改变原选择',
   assert.equal(state.cursor, 10);
   const broken = freshState(); broken.lastRound = { mode:'single', ids:[1], answers:{1:{selected:['X']}} };
   assert.equal(restoreState(JSON.stringify(broken), questions).lastRound, null);
+});
+
+test('模式切换独立续练、保存多选草稿，空模式与无效模式不改变进度', () => {
+  let state = freshState();
+  startRound(state, questions, 'sequential');
+  recordAnswer(state, questions, ['D']);
+  advanceRound(state);
+  const sequential = structuredClone(state.session);
+  startRound(state, questions, 'multiple', () => .4);
+  state.session.draft = ['A', 'C'];
+  const multiple = structuredClone(state.session);
+  const cursor = state.cursor;
+  const before = JSON.stringify(state);
+  assert.equal(startRound(state, questions, 'favorites'), null);
+  assert.equal(startRound(state, questions, 'wrong'), null);
+  assert.throws(() => startRound(state, questions, '__proto__'));
+  assert.equal(JSON.stringify(state), before);
+  state = restoreState(JSON.stringify(state), questions);
+  assert.deepEqual(startRound(state, questions, 'sequential'), sequential);
+  assert.deepEqual(startRound(state, questions, 'multiple'), multiple);
+  assert.equal(startRound(state, questions, 'multiple', () => { throw new Error('不应重新抽题'); }), state.session);
+  assert.equal(state.cursor, cursor);
+  for (let i = 0; i < multiple.ids.length; i++) {
+    recordAnswer(state, questions, questions[state.session.ids[state.session.index] - 1].answer);
+    advanceRound(state);
+  }
+  state = restoreState(JSON.stringify(state), questions);
+  assert.equal(state.session, null);
+  assert.deepEqual(state.paused.sequential, sequential);
+  assert.deepEqual(startRound(state, questions, 'sequential'), sequential);
+  assert.equal(state.records[1].attempts, 1);
+  assert.equal(state.lastRound.mode, 'multiple');
+});
+
+test('收藏与错题来源变化后仍续练原组，旧进度与部分损坏的暂停组可恢复', () => {
+  let state = freshState();
+  toggleFavorite(state, questions, 1);
+  startRound(state, questions, 'favorites');
+  const favorites = structuredClone(state.session);
+  toggleFavorite(state, questions, 1);
+  state.records[801] = { correct: false, attempts: 1 };
+  startRound(state, questions, 'wrong');
+  const wrong = structuredClone(state.session);
+  startRound(state, questions, 'single');
+  state.records[801].correct = true;
+  state = restoreState(JSON.stringify(state), questions);
+  assert.deepEqual(startRound(state, questions, 'favorites'), favorites);
+  assert.deepEqual(startRound(state, questions, 'wrong'), wrong);
+  recordAnswer(state, questions, questions[800].answer);
+  advanceRound(state);
+  assert.equal(state.paused.single.mode, 'single');
+  const old = { cursor: 15, records: state.records, session: favorites };
+  const upgraded = restoreState(JSON.stringify(old), questions);
+  assert.deepEqual(upgraded.session, favorites);
+  assert.deepEqual(upgraded.paused, {});
+  state.paused.random = { ...favorites, mode: 'favorites' };
+  state.paused.multiple = { mode: 'multiple', ids: [9000], index: 0, draft: [], answers: {} };
+  state.paused.sequential = { mode: 'sequential', ids: [1,2], index: 0, draft: [], answers: { 2: { selected: ['A'] } } };
+  state = restoreState(JSON.stringify(state), questions);
+  assert.equal(state.paused.random, undefined);
+  assert.equal(state.paused.multiple, undefined);
+  assert.equal(state.paused.sequential, undefined);
+  assert.deepEqual(state.paused.favorites, favorites);
+  assert.ok(state.paused.single);
+});
+
+test('本组错题重练切换后保留原组，其他模式完成后仍可继续', () => {
+  let state = freshState();
+  state.lastRound = { mode: 'single', ids: [1], answers: { 1: { selected: ['A'], correct: false } } };
+  startRound(state, questions, 'retry');
+  const retry = structuredClone(state.session);
+  startRound(state, questions, 'boolean');
+  while (state.session) {
+    recordAnswer(state, questions, questions[state.session.ids[state.session.index] - 1].answer);
+    advanceRound(state);
+  }
+  state = restoreState(JSON.stringify(state), questions);
+  assert.equal(state.lastRound.mode, 'boolean');
+  assert.deepEqual(startRound(state, questions, 'retry'), retry);
+  recordAnswer(state, questions, ['D']);
+  assert.deepEqual(advanceRound(state), { mode: 'retry', total: 1, correct: 1 });
 });

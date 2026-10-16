@@ -19,7 +19,16 @@ function restoreRound(round, questions) {
 }
 
 export function freshState() {
-  return { cursor: 0, records: {}, favorites: [], session: null, lastRound: null };
+  return { cursor: 0, records: {}, favorites: [], session: null, paused: {}, lastRound: null };
+}
+
+function restoreSession(session, questions) {
+  const restored = restoreRound(session, questions);
+  if (!restored || !Number.isInteger(session.index) || session.index < 0 || session.index >= session.ids.length) return null;
+  if (session.ids.slice(0, session.index).some(id => !restored.answers[id]) || session.ids.slice(session.index + 1).some(id => restored.answers[id])) return null;
+  const current = questions.find(q => q.id === session.ids[session.index]);
+  const draft = Array.isArray(session.draft) && new Set(session.draft).size === session.draft.length && session.draft.every(key => current.options.some(o => o.key === key)) ? session.draft : [];
+  return { ...restored, index: session.index, draft };
 }
 
 export function restoreState(raw, questions) {
@@ -37,15 +46,10 @@ export function restoreState(raw, questions) {
     }
     const lastRound = restoreRound(parsed.lastRound, questions);
     if (lastRound && lastRound.ids.every(id => lastRound.answers[id])) state.lastRound = lastRound;
-    const restored = restoreRound(parsed.session, questions);
-    const s = parsed.session;
-    if (restored && Number.isInteger(s.index) && s.index >= 0 && s.index < s.ids.length) {
-      let valid = true;
-      if (s.ids.slice(0, s.index).some(id => !s.answers[id])) valid = false;
-      if (s.ids.slice(s.index + 1).some(id => s.answers[id])) valid = false;
-      const current = questions.find(q => q.id === s.ids[s.index]);
-      s.draft = Array.isArray(s.draft) && new Set(s.draft).size === s.draft.length && s.draft.every(key => current.options.some(o => o.key === key)) ? s.draft : [];
-      if (valid) state.session = { ...restored, index: s.index, draft: s.draft };
+    state.session = restoreSession(parsed.session, questions);
+    for (const mode of MODES) {
+      const paused = restoreSession(parsed.paused?.[mode], questions);
+      if (paused?.mode === mode && state.session?.mode !== mode) state.paused[mode] = paused;
     }
     return state;
   } catch { return freshState(); }
@@ -56,7 +60,15 @@ export function isCorrect(question, selected) {
 }
 
 export function startRound(state, questions, mode, random = Math.random) {
-  if (state.session) throw new Error('请先完成当前练习');
+  if (!MODES.includes(mode)) throw new Error('未知练习模式');
+  if (state.session?.mode === mode) return state.session;
+  const paused = state.paused[mode];
+  if (paused) {
+    if (state.session) state.paused[state.session.mode] = state.session;
+    state.session = paused;
+    delete state.paused[mode];
+    return state.session;
+  }
   let pool;
   if (mode === 'sequential') {
     if (state.cursor >= questions.length) state.cursor = 0;
@@ -71,6 +83,7 @@ export function startRound(state, questions, mode, random = Math.random) {
     pool = pool.slice(0, 10);
   } else { throw new Error('未知练习模式'); }
   if (!pool.length) return null;
+  if (state.session) state.paused[state.session.mode] = state.session;
   state.session = { mode, ids: pool.map(q => q.id), index: 0, answers: {}, draft: [] };
   return state.session;
 }

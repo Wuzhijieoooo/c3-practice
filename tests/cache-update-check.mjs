@@ -65,12 +65,12 @@ try {
   assert.ok(await page.evaluate(cacheName => caches.has(cacheName), cacheName));
   assert.equal(await page.evaluate(() => caches.has('c3-practice-v4')), false);
   await page.getByRole('button', { name: '更多练习', exact: false }).click();
-  assert.equal(await page.locator('.practice-row').count(), 4);
+  assert.equal(await page.locator('.practice-row').count(), 7);
   errors.length = 0;
   await context.setOffline(true);
   await page.reload();
   await page.getByRole('button', { name: '更多练习', exact: false }).click();
-  assert.equal(await page.locator('.practice-row').count(), 4);
+  assert.equal(await page.locator('.practice-row').count(), 7);
   assert.deepEqual(errors, []);
   console.log('cache update: broken legacy import recovered automatically, current cache isolated, progress preserved, offline reload PASS');
 } finally {
